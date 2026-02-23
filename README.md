@@ -12,7 +12,7 @@ Built with [Tauri](https://tauri.app/) (Rust) + [React](https://react.dev/) + [V
 
 If this project helps you, consider supporting its development:
 
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20me-ff5f5f?logo=ko-fi)](https://ko-fi.com/SEU_USERNAME)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20me-ff5f5f?logo=ko-fi)](https://ko-fi.com/pedroserodio)
 
 ## Philosophy
 
