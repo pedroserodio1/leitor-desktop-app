@@ -1,0 +1,12 @@
+
+node_modules
+dist
+build
+coverage
+.next
+.turbo
+out
+.cache
+*.log
+*.lock
+.env
