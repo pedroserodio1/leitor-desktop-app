@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-brand: #646cff;
+  --color-brand-hover: #535bf2;
+}
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+  }
+
+  html,
+  body {
+    @apply h-full w-full overflow-hidden;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100;
+  }
+
+  #root {
+    @apply h-full w-full overflow-hidden;
+  }
+}
+
+/* Conteúdo preenche 100% do container — todos os adapters (PDF, EPUB, imagem) */
+.reader-page-view .pdf-page-wrapper,
+.reader-page-view .pdf-page-wrapper canvas,
+.reader-page-view iframe,
+.reader-page-view img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain;
+}
+
+.reader-page-view .pdf-page-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Dual page: slot com proporção de página para encostar no centro */
+.dual-page-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.dual-page-slot .pdf-page-wrapper,
+.dual-page-slot .pdf-page-wrapper canvas,
+.dual-page-slot iframe,
+.dual-page-slot img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain;
+}
