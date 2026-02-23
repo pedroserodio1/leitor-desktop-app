@@ -12,7 +12,7 @@ Built with [Tauri](https://tauri.app/) (Rust) + [React](https://react.dev/) + [V
 
 If this project helps you, consider supporting its development:
 
-<script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script><script type='text/javascript'>kofiwidget2.init('Support Me', '#72a4f2', 'K3K41UTLAL');kofiwidget2.draw();</script>
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20me-ff5f5f?logo=ko-fi)](https://ko-fi.com/SEU_USERNAME)
 
 ## Philosophy
 
@@ -76,4 +76,4 @@ The executable will be generated in `src-tauri/target/release/`.
 
 ## License
 
-To be defined. The project is open source and welcomes contributions.
+MIT License — see [LICENSE](LICENSE). The project is open source and welcomes contributions.
