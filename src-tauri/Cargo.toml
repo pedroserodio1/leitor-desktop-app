@@ -27,3 +27,5 @@ tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 zip = "2.2"
 natord = "1.0"
+# rusqlite: sync, sem runtime async, ideal para commands Tauri; bundled = SQLite embutido
+rusqlite = { version = "0.32", features = ["bundled"] }
