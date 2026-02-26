@@ -2,14 +2,16 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useReaderStore } from '../../store/readerStore';
 import { saveGlobalSettings } from '../../services/dbService';
-import { Menu, Moon, Sun, Monitor, Settings, ArrowLeft } from 'lucide-react';
+import { Menu, Moon, Sun, Monitor, Settings, ArrowLeft, Maximize2, Minimize2 } from 'lucide-react';
 import { ProfilePresetSelector } from '../settings/ProfilePresetSelector.tsx';
 
 interface TopBarProps {
   onBackToLibrary?: () => void;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
 }
 
-export const TopBar: React.FC<TopBarProps> = ({ onBackToLibrary }) => {
+export const TopBar: React.FC<TopBarProps> = ({ onBackToLibrary, isFullscreen, onToggleFullscreen }) => {
   const {
     title,
     currentPage,
@@ -25,8 +27,8 @@ export const TopBar: React.FC<TopBarProps> = ({ onBackToLibrary }) => {
 
   return (
     <div className="h-14 border-b border-stone-200 dark:border-stone-800 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md flex items-center justify-between px-5 shrink-0 z-10 relative">
-      <div className="flex items-center gap-4">
-        {onBackToLibrary ? (
+      <div className="flex items-center gap-2">
+        {onBackToLibrary && (
           <button
             onClick={onBackToLibrary}
             data-testid="btn-back-to-library"
@@ -35,15 +37,14 @@ export const TopBar: React.FC<TopBarProps> = ({ onBackToLibrary }) => {
           >
             <ArrowLeft className="w-5 h-5" strokeWidth={1.75} />
           </button>
-        ) : (
-          <button
-            onClick={toggleSidebar}
-            className="p-2.5 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors text-stone-700 dark:text-stone-300"
-            title={t('topbar.toggle_sidebar')}
-          >
-            <Menu className="w-5 h-5" strokeWidth={1.75} />
-          </button>
         )}
+        <button
+          onClick={toggleSidebar}
+          className="p-2.5 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors text-stone-700 dark:text-stone-300"
+          title={t('topbar.toggle_sidebar')}
+        >
+          <Menu className="w-5 h-5" strokeWidth={1.75} />
+        </button>
 
         {title ? (
           <div className="flex flex-col min-w-0">
@@ -92,6 +93,20 @@ export const TopBar: React.FC<TopBarProps> = ({ onBackToLibrary }) => {
             <Monitor className="w-5 h-5" strokeWidth={1.75} />
           )}
         </button>
+
+        {onToggleFullscreen && (
+          <button
+            onClick={onToggleFullscreen}
+            className="p-2.5 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors text-stone-700 dark:text-stone-300"
+            title={isFullscreen ? t('settings.fullscreen_exit') : t('settings.fullscreen_enter')}
+          >
+            {isFullscreen ? (
+              <Minimize2 className="w-5 h-5" strokeWidth={1.75} />
+            ) : (
+              <Maximize2 className="w-5 h-5" strokeWidth={1.75} />
+            )}
+          </button>
+        )}
 
         <button
           onClick={toggleSettingsPanel}

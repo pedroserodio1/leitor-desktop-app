@@ -201,7 +201,13 @@ export const ReaderLayout: React.FC<ReaderLayoutProps> = ({ content, onBack, onB
       )}
 
       <div className="flex-1 flex flex-col relative h-full overflow-hidden bg-stone-100 dark:bg-stone-950">
-        {!isFullscreen && <TopBar onBackToLibrary={onBack} />}
+        {!isFullscreen && (
+          <TopBar
+            onBackToLibrary={onBack}
+            isFullscreen={isFullscreen}
+            onToggleFullscreen={toggleFullscreen}
+          />
+        )}
 
         <div
           className={`flex-1 relative overflow-hidden group ${isFullscreen ? 'bg-black' : 'bg-stone-100 dark:bg-stone-950'}`}
