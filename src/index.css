@@ -13,6 +13,12 @@
   /* Tipografia */
   --font-sans: "DM Sans", system-ui, sans-serif;
   --font-heading: "Literata", Georgia, serif;
+  /* Tokens de design */
+  --spacing-header: 1.25rem;
+  --radius-card: 1rem;
+  --radius-button: 0.75rem;
+  --elevation-card: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --elevation-modal: 0 25px 50px -12px rgb(0 0 0 / 0.25);
 }
 
 @layer base {
@@ -80,11 +86,11 @@
   object-fit: contain;
 }
 
-/* Animação fluida de troca de página */
+/* Animação de troca de página: fade + slide suave, igual para todas */
 @keyframes page-in-next {
   from {
     opacity: 0;
-    transform: translateX(32px);
+    transform: translateX(20px);
   }
   to {
     opacity: 1;
@@ -95,7 +101,7 @@
 @keyframes page-in-prev {
   from {
     opacity: 0;
-    transform: translateX(-32px);
+    transform: translateX(-20px);
   }
   to {
     opacity: 1;
@@ -104,9 +110,9 @@
 }
 
 .page-transition-next {
-  animation: page-in-next 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  animation: page-in-next 0.25s ease-out forwards;
 }
 
 .page-transition-prev {
-  animation: page-in-prev 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  animation: page-in-prev 0.25s ease-out forwards;
 }
