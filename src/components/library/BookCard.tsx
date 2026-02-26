@@ -28,21 +28,20 @@ export const BookCard: React.FC<BookCardProps> = ({ book, onClick }) => {
     <button
       type="button"
       onClick={onClick}
-      className="group w-full text-left rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand/50 dark:hover:border-brand/50 hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand/50 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-950"
+      className="group w-full text-left rounded-2xl overflow-hidden bg-white dark:bg-stone-900/80 border border-stone-200 dark:border-stone-800 hover:border-brand/40 dark:hover:border-brand/40 hover:shadow-xl hover:shadow-stone-200/50 dark:hover:shadow-black/20 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-brand/40 focus:ring-offset-2 focus:ring-offset-stone-50 dark:focus:ring-offset-stone-950"
     >
-      {/* Capa placeholder */}
-      <div className="aspect-[3/4] bg-gradient-to-br from-slate-300 to-slate-400 dark:from-slate-600 dark:to-slate-700 flex items-center justify-center">
-        <Book className="w-16 h-16 text-white/60 dark:text-white/40 group-hover:scale-110 transition-transform duration-200" />
+      <div className="aspect-[3/4] bg-gradient-to-br from-stone-300 to-stone-400 dark:from-stone-700 dark:to-stone-800 flex items-center justify-center">
+        <Book className="w-20 h-20 text-white/70 dark:text-white/50 group-hover:scale-105 transition-transform duration-300" strokeWidth={1.25} />
       </div>
 
-      <div className="p-3">
-        <p className="font-medium text-sm text-slate-900 dark:text-slate-100 truncate">
+      <div className="p-4">
+        <p className="font-heading font-medium text-stone-900 dark:text-stone-100 truncate text-[15px] leading-snug">
           {book.title}
         </p>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+        <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">
           {volumeLabel}
         </p>
-        <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+        <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">
           {t("library.added_at", { date: formatDate(book.addedAt) })}
         </p>
       </div>

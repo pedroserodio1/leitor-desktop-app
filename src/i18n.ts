@@ -57,6 +57,9 @@ const resources = {
         reading_direction: "Reading Direction",
         appearance: "Appearance",
         theme: "Theme",
+        theme_light: "Light",
+        theme_dark: "Dark",
+        language_label: "Language",
         font_size: "Font Size (EPUB)",
         philosophy: "Philosophy: The presets in the top bar (Book, Manga, Comic, PDF) are just shortcuts. You can freely change these individual settings at any time without being locked into a mode."
       },
@@ -139,6 +142,9 @@ const resources = {
         reading_direction: "Direção de Leitura",
         appearance: "Aparência",
         theme: "Tema",
+        theme_light: "Claro",
+        theme_dark: "Escuro",
+        language_label: "Idioma",
         font_size: "Tamanho da Fonte (EPUB)",
         philosophy: "Filosofia: Os perfis na barra superior (Livro, Mangá, HQ, PDF) são apenas atalhos. Você pode alterar essas configurações individuais livremente a qualquer momento sem ficar preso a um modo."
       },
@@ -221,6 +227,9 @@ const resources = {
         reading_direction: "Dirección de Lectura",
         appearance: "Apariencia",
         theme: "Tema",
+        theme_light: "Claro",
+        theme_dark: "Oscuro",
+        language_label: "Idioma",
         font_size: "Tamaño de Fuente (EPUB)",
         philosophy: "Filosofía: Los perfiles en la barra superior (Libro, Manga, Cómic, PDF) son solo atajos. Puedes cambiar estas configuraciones individuales libremente en cualquier momento sin quedarte atascado en un modo."
       },

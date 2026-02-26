@@ -3,8 +3,16 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --color-brand: #646cff;
-  --color-brand-hover: #535bf2;
+  /* Identidade: verde-teal profundo, ambiente de leitura calmo */
+  --color-brand: #0d9488;
+  --color-brand-hover: #0f766e;
+  --color-surface: #f8faf8;
+  --color-surface-elevated: #ffffff;
+  --color-surface-dark: #0f1419;
+  --color-surface-elevated-dark: #1a2228;
+  /* Tipografia */
+  --font-sans: "DM Sans", system-ui, sans-serif;
+  --font-heading: "Literata", Georgia, serif;
 }
 
 @layer base {
@@ -14,19 +22,33 @@
 
   html,
   body {
-    @apply h-full w-full overflow-hidden;
+    @apply h-full w-full overflow-hidden antialiased;
+    font-family: var(--font-sans);
   }
 
   body {
-    @apply bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100;
+    @apply text-stone-800 dark:text-stone-200;
+    background-color: var(--color-surface);
+  }
+
+  .dark body {
+    background-color: var(--color-surface-dark);
   }
 
   #root {
     @apply h-full w-full overflow-hidden;
   }
+
+  h1, h2, h3 {
+    font-family: var(--font-heading);
+  }
+
+  .font-heading {
+    font-family: var(--font-heading);
+  }
 }
 
-/* Conteúdo preenche 100% do container — todos os adapters (PDF, EPUB, imagem) */
+/* Reader: conteúdo preenche 100% */
 .reader-page-view .pdf-page-wrapper,
 .reader-page-view .pdf-page-wrapper canvas,
 .reader-page-view iframe,
@@ -42,7 +64,6 @@
   justify-content: center;
 }
 
-/* Dual page: slot com proporção de página para encostar no centro */
 .dual-page-slot {
   display: flex;
   align-items: center;

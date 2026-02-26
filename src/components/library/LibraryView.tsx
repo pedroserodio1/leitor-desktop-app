@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Library as LibraryIcon, Plus } from "lucide-react";
+import { Library as LibraryIcon, Plus, Settings } from "lucide-react";
 import { BookCard } from "./BookCard";
 import { AddBookModal } from "./AddBookModal";
 import { useLibrary } from "../../hooks/useLibrary";
@@ -8,9 +8,10 @@ import type { LibraryBook } from "../../types/library";
 
 interface LibraryViewProps {
   onSelectBook: (book: LibraryBook) => void;
+  onOpenSettings?: () => void;
 }
 
-export const LibraryView: React.FC<LibraryViewProps> = ({ onSelectBook }) => {
+export const LibraryView: React.FC<LibraryViewProps> = ({ onSelectBook, onOpenSettings }) => {
   const { t } = useTranslation();
   const {
     books,
@@ -43,46 +44,62 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onSelectBook }) => {
   }, [clearError]);
 
   return (
-    <div className="h-screen w-full flex flex-col bg-slate-50 dark:bg-slate-950">
-      {/* Header */}
-      <header className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-        <div className="flex items-center gap-3">
-          <LibraryIcon className="w-8 h-8 text-brand" />
-          <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+    <div className="h-screen w-full flex flex-col bg-stone-50 dark:bg-stone-950">
+      <header className="shrink-0 flex items-center justify-between px-8 py-5 border-b border-stone-200/80 dark:border-stone-800 bg-white/95 dark:bg-stone-900/95 backdrop-blur-sm">
+        <div className="flex items-center gap-4">
+          <div className="p-2 rounded-xl bg-brand/10 dark:bg-brand/20">
+            <LibraryIcon className="w-7 h-7 text-brand" strokeWidth={1.75} />
+          </div>
+          <h1 className="font-heading text-2xl font-semibold text-stone-900 dark:text-stone-100 tracking-tight">
             {t("library.title")}
           </h1>
         </div>
-        <button
-          type="button"
-          onClick={() => setModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-brand hover:bg-brand-hover text-white font-medium transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          {t("library.add_book")}
-        </button>
+        <div className="flex items-center gap-3">
+          {onOpenSettings && (
+            <button
+              type="button"
+              onClick={onOpenSettings}
+              className="p-2.5 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-400 transition-colors"
+              title={t("library.app_settings")}
+              aria-label={t("library.app_settings")}
+            >
+              <Settings className="w-6 h-6" strokeWidth={1.75} />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setModalOpen(true)}
+            className="flex items-center gap-2.5 px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-white font-medium shadow-lg shadow-brand/20 hover:shadow-brand/30 transition-all duration-200"
+          >
+            <Plus className="w-5 h-5" strokeWidth={2.5} />
+            {t("library.add_book")}
+          </button>
+        </div>
       </header>
 
-      {/* Content */}
-      <main className="flex-1 overflow-y-auto p-6">
+      <main className="flex-1 overflow-y-auto p-8">
         {books.length === 0 ? (
-          <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
-            <div className="w-24 h-24 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center mb-4">
-              <LibraryIcon className="w-12 h-12 text-slate-500 dark:text-slate-400" />
+          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+            <div className="w-28 h-28 rounded-3xl bg-stone-200/80 dark:bg-stone-800/80 flex items-center justify-center mb-6 shadow-inner">
+              <LibraryIcon className="w-14 h-14 text-stone-400 dark:text-stone-500" strokeWidth={1.25} />
             </div>
-            <p className="text-slate-600 dark:text-slate-400 max-w-sm">
+            <p className="font-heading text-xl text-stone-700 dark:text-stone-300 mb-2">
               {t("library.no_books")}
+            </p>
+            <p className="text-stone-500 dark:text-stone-400 text-sm max-w-sm mb-8">
+              Adicione uma pasta ou arquivo para começar a ler.
             </p>
             <button
               type="button"
               onClick={() => setModalOpen(true)}
-              className="mt-6 flex items-center gap-2 px-5 py-2.5 rounded-lg bg-brand hover:bg-brand-hover text-white font-medium transition-colors"
+              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-brand hover:bg-brand-hover text-white font-medium shadow-lg shadow-brand/20 transition-all duration-200"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-5 h-5" strokeWidth={2.5} />
               {t("library.add_book")}
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
             {books.map((book) => (
               <BookCard
                 key={book.id}

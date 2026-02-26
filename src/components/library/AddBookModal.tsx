@@ -46,43 +46,43 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/60 backdrop-blur-md"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-book-title"
-        className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 shadow-xl border border-slate-200 dark:border-slate-700 mx-4 overflow-hidden"
+        className="w-full max-w-md rounded-3xl bg-white dark:bg-stone-900 shadow-2xl border border-stone-200 dark:border-stone-800 mx-4 overflow-hidden"
       >
-        <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
-          <h2 id="add-book-title" className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+        <div className="flex items-center justify-between p-5 border-b border-stone-100 dark:border-stone-800">
+          <h2 id="add-book-title" className="font-heading text-xl font-semibold text-stone-900 dark:text-stone-100">
             {t("library.add_book")}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-lg text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="p-2.5 rounded-xl text-stone-500 hover:text-stone-700 dark:hover:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-4 space-y-3">
+        <div className="p-5 space-y-4">
           <button
             type="button"
             onClick={handleSelectFolder}
             disabled={isImporting}
-            className="w-full flex items-center gap-4 p-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-brand/10 dark:hover:bg-brand/20 border border-slate-200 dark:border-slate-700 transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex items-center gap-4 p-4 rounded-2xl bg-stone-50 dark:bg-stone-800/80 hover:bg-brand/5 dark:hover:bg-brand/10 border border-stone-200 dark:border-stone-700 transition-all duration-200 text-left disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <div className="p-3 rounded-lg bg-brand/20 dark:bg-brand/30">
-              <FolderOpen className="w-6 h-6 text-brand" />
+            <div className="p-3.5 rounded-xl bg-brand/15 dark:bg-brand/25">
+              <FolderOpen className="w-6 h-6 text-brand" strokeWidth={1.75} />
             </div>
             <div>
-              <p className="font-medium text-slate-900 dark:text-slate-100">
+              <p className="font-medium text-stone-900 dark:text-stone-100">
                 {t("library.select_folder")}
               </p>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
+              <p className="text-sm text-stone-500 dark:text-stone-400 mt-0.5">
                 Pasta com subpastas (volumes) ou arquivos de imagem/PDF
               </p>
             </div>
@@ -92,17 +92,17 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({
             type="button"
             onClick={handleSelectFile}
             disabled={isImporting}
-            className="w-full flex items-center gap-4 p-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-brand/10 dark:hover:bg-brand/20 border border-slate-200 dark:border-slate-700 transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex items-center gap-4 p-4 rounded-2xl bg-stone-50 dark:bg-stone-800/80 hover:bg-stone-100 dark:hover:bg-stone-700/50 border border-stone-200 dark:border-stone-700 transition-all duration-200 text-left disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <div className="p-3 rounded-lg bg-slate-200 dark:bg-slate-700">
-              <FileText className="w-6 h-6 text-slate-600 dark:text-slate-300" />
+            <div className="p-3.5 rounded-xl bg-stone-200 dark:bg-stone-700">
+              <FileText className="w-6 h-6 text-stone-600 dark:text-stone-300" strokeWidth={1.75} />
             </div>
             <div>
-              <p className="font-medium text-slate-900 dark:text-slate-100">
+              <p className="font-medium text-stone-900 dark:text-stone-100">
                 {t("library.select_file")}
               </p>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                JPG, PNG, WebP, PDF ou EPUB
+              <p className="text-sm text-stone-500 dark:text-stone-400 mt-0.5">
+                JPG, PNG, WebP, PDF, EPUB, CBZ ou RAR
               </p>
             </div>
           </button>
@@ -110,7 +110,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({
           {errorMessage && (
             <div
               role="alert"
-              className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-sm"
+              className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 text-amber-800 dark:text-amber-200 text-sm"
             >
               {errorMessage}
             </div>

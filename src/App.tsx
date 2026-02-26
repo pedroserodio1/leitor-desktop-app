@@ -1,12 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ReaderLayout } from "./components/layout/ReaderLayout";
 import { LibraryView } from "./components/library/LibraryView";
 import { BookDetailView } from "./components/library/BookDetailView";
+import { GlobalSettingsView } from "./components/settings/GlobalSettingsView";
+import { useReaderStore } from "./store/readerStore";
 import type { LibraryBook } from "./types/library";
 
-type ViewState = "library" | "detail" | "reader";
+type ViewState = "library" | "detail" | "reader" | "settings";
 
 function App() {
+  const theme = useReaderStore((s) => s.settings.theme);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+  }, [theme]);
+
   const [view, setView] = useState<ViewState>("library");
   const [selectedBook, setSelectedBook] = useState<LibraryBook | null>(null);
   const [readerContent, setReaderContent] = useState<{
@@ -21,7 +29,14 @@ function App() {
           setSelectedBook(book);
           setView("detail");
         }}
+        onOpenSettings={() => setView("settings")}
       />
+    );
+  }
+
+  if (view === "settings") {
+    return (
+      <GlobalSettingsView onBack={() => setView("library")} />
     );
   }
 
@@ -60,6 +75,7 @@ function App() {
         setSelectedBook(book);
         setView("detail");
       }}
+      onOpenSettings={() => setView("settings")}
     />
   );
 }
