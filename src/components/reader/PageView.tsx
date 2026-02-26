@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useReaderStore } from "../../store/readerStore";
 import { PageRenderer } from "./PageRedered";
@@ -5,6 +6,15 @@ import { PageRenderer } from "./PageRedered";
 export const PageView: React.FC = () => {
     const { currentPage, settings, prevPage, nextPage } = useReaderStore();
     const { t } = useTranslation();
+    const [transitionDirection, setTransitionDirection] = useState<'prev' | 'next'>('next');
+    const prevPageRef = useRef(currentPage);
+
+    useEffect(() => {
+        if (currentPage !== prevPageRef.current) {
+            setTransitionDirection(currentPage > prevPageRef.current ? 'next' : 'prev');
+            prevPageRef.current = currentPage;
+        }
+    }, [currentPage]);
 
     return (
         <div className="w-full h-full flex items-center justify-center overflow-hidden bg-white dark:bg-slate-900 relative">
@@ -29,7 +39,12 @@ export const PageView: React.FC = () => {
             >
                 <div className="w-full h-full flex items-center justify-center overflow-hidden">
                     {currentPage > 0 ? (
-                        <PageRenderer pageNum={currentPage} />
+                        <div
+                            key={currentPage}
+                            className={`w-full h-full flex items-center justify-center overflow-hidden page-transition-${transitionDirection}`}
+                        >
+                            <PageRenderer pageNum={currentPage} />
+                        </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center h-full text-slate-400">
                             <p>{t('views.no_page')}</p>

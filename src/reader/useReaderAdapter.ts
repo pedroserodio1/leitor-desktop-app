@@ -175,9 +175,9 @@ export function useReaderAdapter() {
     }
   }, [setStatus, setTitle, setTotalPages, setSetting, setAdapterType]);
 
-  // --- Load content from library (paths + title) ---
+  // --- Load content from library (paths + title). initialPage restaura progresso salvo. ---
   const loadPaths = useCallback(
-    async (paths: string[], title: string) => {
+    async (paths: string[], title: string, initialPage?: number) => {
       if (paths.length === 0) {
         setStatus("error");
         return;
@@ -198,7 +198,10 @@ export function useReaderAdapter() {
           await adapter.load(paths);
           setTitle(title);
           setTotalPages(adapter.getTotalPages());
-          setCurrentPage(1);
+          const total = adapter.getTotalPages();
+          const page = initialPage != null && initialPage >= 1 && initialPage <= total ? initialPage : 1;
+          setCurrentPage(page);
+          if (page > 1) adapter.goTo(page);
           setSetting("zoom", 100);
           setStatus("ready");
         } else if (ext === "cbz" || ext === "zip" || ext === "rar") {
@@ -210,7 +213,10 @@ export function useReaderAdapter() {
           await adapter.load(path);
           setTitle(title);
           setTotalPages(adapter.getTotalPages());
-          setCurrentPage(1);
+          const total = adapter.getTotalPages();
+          const page = initialPage != null && initialPage >= 1 && initialPage <= total ? initialPage : 1;
+          setCurrentPage(page);
+          if (page > 1) adapter.goTo(page);
           setSetting("zoom", 100);
           setStatus("ready");
         } else if (ext === "pdf" || ext === "epub") {
@@ -228,7 +234,10 @@ export function useReaderAdapter() {
           }
           setTitle(title);
           setTotalPages(adapter.getTotalPages());
-          setCurrentPage(1);
+          const total = adapter.getTotalPages();
+          const page = initialPage != null && initialPage >= 1 && initialPage <= total ? initialPage : 1;
+          setCurrentPage(page);
+          if (page > 1) adapter.goTo(page);
           setSetting("zoom", 100);
           setStatus("ready");
         } else {

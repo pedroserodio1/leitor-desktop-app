@@ -22,7 +22,7 @@ export abstract class BaseAdapter implements ReaderAdapter {
 
   // --- Cache ---
   protected pageCache: Map<number, HTMLElement> = new Map();
-  protected maxCacheSize = 3; // current + prev + next
+  protected maxCacheSize = 6; // current, prev, +3 à frente
   protected preRenderEnabled = true;
 
   // -------------------------------------------------------------------
@@ -116,12 +116,11 @@ export abstract class BaseAdapter implements ReaderAdapter {
   // -------------------------------------------------------------------
 
   /**
-   * Evict pages that fall outside the window [current-1, current+1].
-   * This keeps memory bounded to at most `maxCacheSize` rendered pages.
+   * Evict pages outside the window [current-1, current+3] (1 atrás, 3 à frente).
    */
   protected maintainCache(centerPage: number): void {
     const windowStart = Math.max(1, centerPage - 1);
-    const windowEnd = Math.min(this.totalPages, centerPage + 1);
+    const windowEnd = Math.min(this.totalPages, centerPage + 3);
 
     for (const [key] of this.pageCache) {
       if (key < windowStart || key > windowEnd) {
@@ -131,11 +130,10 @@ export abstract class BaseAdapter implements ReaderAdapter {
   }
 
   /**
-   * Pre-render adjacent pages (prev + next) in the background.
-   * Runs after the current page is displayed, so it doesn't block the UI.
+   * Pre-render 1 página atrás e 3 à frente para troca sem piscar.
    */
   protected async preRender(centerPage: number): Promise<void> {
-    const adjacentPages = [centerPage - 1, centerPage + 1].filter(
+    const adjacentPages = [centerPage - 1, centerPage + 1, centerPage + 2, centerPage + 3].filter(
       (p) => p >= 1 && p <= this.totalPages && !this.pageCache.has(p)
     );
 

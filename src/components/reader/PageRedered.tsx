@@ -2,7 +2,13 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useReaderAdapterContext } from '../../reader/ReaderAdapterContext';
 import { useReaderStore } from '../../store/readerStore';
 
-export const PageRenderer: React.FC<{ pageNum: number }> = ({ pageNum }) => {
+interface PageRendererProps {
+    pageNum: number;
+    /** Chamado após o conteúdo ser renderizado (para medir altura no modo duplo). */
+    onRendered?: (container: HTMLDivElement) => void;
+}
+
+export const PageRenderer: React.FC<PageRendererProps> = ({ pageNum, onRendered }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [hasDimensions, setHasDimensions] = useState(false);
     const adapterType = useReaderStore((s) => s.adapterType);
@@ -36,8 +42,14 @@ export const PageRenderer: React.FC<{ pageNum: number }> = ({ pageNum }) => {
         if (adapterType !== 'epub') {
             containerRef.current.innerHTML = '';
         }
-        renderToContainer(containerRef.current, pageNum);
-    }, [pageNum, renderToContainer, hasDimensions, adapterType]);
+        const el = containerRef.current;
+        renderToContainer(el, pageNum).then(() => {
+            if (!el || !onRendered) return;
+            requestAnimationFrame(() => {
+                if (el.isConnected) onRendered(el);
+            });
+        });
+    }, [pageNum, renderToContainer, hasDimensions, adapterType, onRendered]);
 
     return <div ref={containerRef} className="w-full h-full min-h-[200px] flex items-center justify-center" />;
 };

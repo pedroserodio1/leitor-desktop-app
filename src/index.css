@@ -79,3 +79,34 @@
   height: 100% !important;
   object-fit: contain;
 }
+
+/* Animação fluida de troca de página */
+@keyframes page-in-next {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes page-in-prev {
+  from {
+    opacity: 0;
+    transform: translateX(-32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.page-transition-next {
+  animation: page-in-next 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.page-transition-prev {
+  animation: page-in-prev 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}

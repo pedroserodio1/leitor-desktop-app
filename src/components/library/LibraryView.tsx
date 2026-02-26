@@ -15,6 +15,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onSelectBook, onOpenSe
   const { t } = useTranslation();
   const {
     books,
+    loaded,
     addFromFolder,
     addFromFile,
     error,
@@ -78,7 +79,11 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onSelectBook, onOpenSe
       </header>
 
       <main className="flex-1 overflow-y-auto p-8">
-        {books.length === 0 ? (
+        {!loaded ? (
+          <div className="flex flex-col items-center justify-center min-h-[60vh] text-stone-500 dark:text-stone-400">
+            {t("library.loading")}
+          </div>
+        ) : books.length === 0 ? (
           <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
             <div className="w-28 h-28 rounded-3xl bg-stone-200/80 dark:bg-stone-800/80 flex items-center justify-center mb-6 shadow-inner">
               <LibraryIcon className="w-14 h-14 text-stone-400 dark:text-stone-500" strokeWidth={1.25} />

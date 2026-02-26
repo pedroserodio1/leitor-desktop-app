@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useReaderStore } from "../../store/readerStore";
+import { saveGlobalSettings } from "../../services/dbService";
 import { ArrowLeft, Moon, Sun, Globe } from "lucide-react";
 import type { Theme } from "../../types/reader";
 
@@ -54,7 +55,10 @@ export const GlobalSettingsView: React.FC<GlobalSettingsViewProps> = ({ onBack }
                 <button
                   key={theme}
                   type="button"
-                  onClick={() => setSetting("theme", theme)}
+                  onClick={() => {
+                    setSetting("theme", theme);
+                    saveGlobalSettings({ theme }).catch((e) => console.error("[GlobalSettings] saveGlobalSettings:", e));
+                  }}
                   className={`flex-1 py-3 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
                     settings.theme === theme
                       ? "bg-white dark:bg-stone-600 shadow-sm text-brand"

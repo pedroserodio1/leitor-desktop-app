@@ -34,9 +34,9 @@ export class ImageAdapter extends BaseAdapter {
     this.totalPages = this.imageUrls.length;
     this.currentPage = 1;
 
-    // Pre-load the first few images
+    // Pre-load first 4 images (páginas 1–4) para abrir já com cache
     if (this.preRenderEnabled && this.totalPages > 0) {
-      await this.preloadImages([1, 2, 3].filter((p) => p <= this.totalPages));
+      await this.preloadImages([1, 2, 3, 4].filter((p) => p <= this.totalPages));
     }
   }
 
@@ -113,7 +113,7 @@ export class ImageAdapter extends BaseAdapter {
   }
 
   protected async preRender(centerPage: number): Promise<void> {
-    const adjacent = [centerPage - 1, centerPage + 1].filter(
+    const adjacent = [centerPage - 1, centerPage + 1, centerPage + 2, centerPage + 3].filter(
       (p) => p >= 1 && p <= this.totalPages
     );
     await this.preloadImages(adjacent);

@@ -21,7 +21,7 @@ export const BottomControls: React.FC = () => {
 
   return (
     <div
-      className="absolute bottom-0 left-0 w-full h-36 flex items-end justify-center pb-8 z-20"
+      className="absolute bottom-0 left-0 w-full h-36 flex items-end justify-center pb-8 z-[110]"
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
     >

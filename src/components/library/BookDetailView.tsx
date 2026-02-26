@@ -6,7 +6,7 @@ import type { LibraryBook, Volume, Chapter } from "../../types/library";
 interface BookDetailViewProps {
   book: LibraryBook;
   onBack: () => void;
-  onRead: (paths: string[], title: string) => void;
+  onRead: (paths: string[], title: string, bookId: string, volumeId: string) => void;
 }
 
 export const BookDetailView: React.FC<BookDetailViewProps> = ({
@@ -27,12 +27,12 @@ export const BookDetailView: React.FC<BookDetailViewProps> = ({
   };
 
   const handleChapterClick = (chapter: Chapter, volume: Volume) => {
-    onRead([chapter.path], chapter.name);
+    onRead([chapter.path], chapter.name, book.id, volume.id);
   };
 
   const handleReadVolume = (volume: Volume) => {
     const paths = volume.chapters.map((c) => c.path);
-    onRead(paths, volume.name);
+    onRead(paths, volume.name, book.id, volume.id);
   };
 
   return (
