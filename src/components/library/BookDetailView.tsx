@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { ArrowLeft, BookOpen, FileText, ChevronRight, Bookmark, Pencil, Book, Trash2, CheckCircle, RotateCcw } from "lucide-react";
+import { ArrowLeft, BookOpen, FileText, ChevronRight, Bookmark, Pencil, Book, Trash2, CheckCircle, RotateCcw, Check } from "lucide-react";
 import { useShelves } from "../../hooks/useShelves";
 import { saveProgress } from "../../services/dbService";
 import type { LibraryBook, Volume, Chapter } from "../../types/library";
@@ -26,10 +26,21 @@ export const BookDetailView: React.FC<BookDetailViewProps> = ({
   const [selectedVolume, setSelectedVolume] = useState<Volume | null>(null);
   const [showShelfMenu, setShowShelfMenu] = useState(false);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+  const shelfMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadBookShelfIds(book.id);
   }, [book.id, loadBookShelfIds]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (showShelfMenu && shelfMenuRef.current && !shelfMenuRef.current.contains(e.target as Node)) {
+        setShowShelfMenu(false);
+      }
+    };
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, [showShelfMenu]);
 
   const currentShelfIds = bookShelfIds.get(book.id) ?? [];
 
@@ -112,36 +123,48 @@ export const BookDetailView: React.FC<BookDetailViewProps> = ({
               <Pencil className="w-5 h-5" strokeWidth={1.75} />
             </button>
           )}
-          <div className="relative">
+          <div className="relative" ref={shelfMenuRef}>
             <button
               type="button"
               onClick={() => setShowShelfMenu((s) => !s)}
-              className="p-2.5 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-400"
+              className={`p-2.5 rounded-xl transition-colors ${showShelfMenu ? "bg-brand/15 dark:bg-brand/25 text-brand" : "hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-400"}`}
               title={t("library.add_to_shelf")}
             >
               <Bookmark className="w-5 h-5" strokeWidth={1.75} />
             </button>
-          {showShelfMenu && (
-            <div className="absolute right-0 top-full mt-1 py-2 w-48 rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 shadow-xl z-20">
-              {shelves.map((shelf) => {
-                const isIn = currentShelfIds.includes(shelf.id);
-                return (
-                  <button
-                    key={shelf.id}
-                    type="button"
-                    onClick={async () => {
-                      if (isIn) await removeFromShelf(book.id, shelf.id);
-                      else await addToShelf(book.id, shelf.id);
-                      setShowShelfMenu(false);
-                    }}
-                    className={`w-full px-4 py-2 text-left text-sm ${isIn ? "text-brand font-medium" : "text-stone-700 dark:text-stone-300"}`}
-                  >
-                    {isIn ? "✓ " : ""}{shelf.name}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+            {showShelfMenu && (
+              <div className="absolute right-0 top-full mt-2 py-2 min-w-[200px] rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 shadow-xl z-20 overflow-hidden">
+                <div className="px-4 py-2 border-b border-stone-100 dark:border-stone-800">
+                  <p className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
+                    {t("library.add_to_shelf")}
+                  </p>
+                </div>
+                {shelves.length === 0 ? (
+                  <p className="px-4 py-4 text-sm text-stone-500 dark:text-stone-400">{t("library.no_shelves", "Nenhuma estante")}</p>
+                ) : (
+                  shelves.map((shelf) => {
+                    const isIn = currentShelfIds.includes(shelf.id);
+                    return (
+                      <button
+                        key={shelf.id}
+                        type="button"
+                        onClick={async () => {
+                          if (isIn) await removeFromShelf(book.id, shelf.id);
+                          else await addToShelf(book.id, shelf.id);
+                        }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm font-medium transition-colors ${isIn ? "bg-brand/10 dark:bg-brand/20 text-brand" : "text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800/80"}`}
+                      >
+                        <span className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 ${isIn ? "bg-brand text-white" : "border-2 border-stone-300 dark:border-stone-600"}`}>
+                          {isIn && <Check className="w-3 h-3" strokeWidth={3} />}
+                        </span>
+                        <Bookmark className="w-4 h-4 text-stone-400" strokeWidth={1.75} />
+                        {shelf.name}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            )}
           </div>
         </div>
       </header>

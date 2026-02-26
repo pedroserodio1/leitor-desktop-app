@@ -4,7 +4,8 @@ import { useReaderStore } from "../../store/readerStore";
 import { saveGlobalSettings } from "../../services/dbService";
 import { loadLibrary, computeBooksWithProgress } from "../../services/libraryService";
 import { getAllProgress } from "../../services/dbService";
-import { ArrowLeft, BarChart3, Bookmark, Monitor, Moon, Sun, Globe, Keyboard, Info } from "lucide-react";
+import { getVersion } from "@tauri-apps/api/app";
+import { ArrowLeft, BarChart3, Bookmark, Monitor, Moon, Sun, Globe, Keyboard, Info, ExternalLink } from "lucide-react";
 import { useShelves } from "../../hooks/useShelves";
 import type { Theme } from "../../types/reader";
 
@@ -39,6 +40,11 @@ export const GlobalSettingsView: React.FC<GlobalSettingsViewProps> = ({ onBack }
     completed: number;
     pagesRead: number;
   } | null>(null);
+  const [appVersion, setAppVersion] = useState<string>("—");
+
+  useEffect(() => {
+    getVersion().then(setAppVersion).catch(() => setAppVersion("0.1.0"));
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -197,20 +203,39 @@ export const GlobalSettingsView: React.FC<GlobalSettingsViewProps> = ({ onBack }
             <Bookmark className="w-4 h-4" strokeWidth={1.75} />
             {t("library.shelves")}
           </h2>
-          <ul className="space-y-2 mb-4">
-            {shelves.map((s) => (
-              <li key={s.id} className="text-sm text-stone-700 dark:text-stone-200">
-                {s.name}
-              </li>
-            ))}
-          </ul>
+          <div className="space-y-2 mb-4">
+            {shelves.length === 0 ? (
+              <p className="text-sm text-stone-500 dark:text-stone-400 py-4 text-center rounded-xl bg-stone-50 dark:bg-stone-900/50">
+                {t("library.no_shelves")}
+              </p>
+            ) : (
+              shelves.map((s) => (
+                <div
+                  key={s.id}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl bg-stone-100 dark:bg-stone-800/80 border border-transparent hover:border-stone-200 dark:hover:border-stone-700 transition-colors"
+                >
+                  <Bookmark className="w-4 h-4 text-stone-400 shrink-0" strokeWidth={1.75} />
+                  <span className="text-sm font-medium text-stone-700 dark:text-stone-200">{s.name}</span>
+                </div>
+              ))
+            )}
+          </div>
           <div className="flex gap-2">
             <input
               type="text"
               value={newShelfName}
               onChange={(e) => setNewShelfName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const name = newShelfName.trim();
+                  if (name) {
+                    createShelf(`shelf-${Date.now()}`, name);
+                    setNewShelfName("");
+                  }
+                }
+              }}
               placeholder={t("library.create_shelf")}
-              className="flex-1 px-4 py-2 rounded-xl bg-stone-100 dark:bg-stone-800 border-0 text-sm"
+              className="flex-1 px-4 py-2.5 rounded-xl bg-stone-100 dark:bg-stone-800 border-0 text-sm text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:ring-2 focus:ring-brand/30 focus:outline-none"
             />
             <button
               type="button"
@@ -221,7 +246,8 @@ export const GlobalSettingsView: React.FC<GlobalSettingsViewProps> = ({ onBack }
                 await createShelf(id, name);
                 setNewShelfName("");
               }}
-              className="px-4 py-2 rounded-xl bg-brand text-white text-sm font-medium"
+              disabled={!newShelfName.trim()}
+              className="px-5 py-2.5 rounded-xl bg-brand hover:bg-brand/90 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors"
             >
               {t("library.create_shelf")}
             </button>
@@ -261,16 +287,34 @@ export const GlobalSettingsView: React.FC<GlobalSettingsViewProps> = ({ onBack }
         )}
 
         {activeTab === "about" && (
-        <section className="space-y-4">
+        <section className="space-y-5">
           <h2 className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider flex items-center gap-2">
             <Info className="w-4 h-4" strokeWidth={1.75} />
             {t("settings.about")}
           </h2>
-          <div className="p-4 rounded-xl bg-stone-100 dark:bg-stone-800">
-            <p className="font-medium text-stone-900 dark:text-stone-100">{t("settings.about_app")}</p>
-            <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
-              {t("settings.about_version")}: 0.0.0
-            </p>
+          <div className="p-6 rounded-2xl bg-stone-100 dark:bg-stone-800/80 border border-stone-200/60 dark:border-stone-700/60 space-y-4">
+            <div>
+              <p className="text-xl font-semibold text-stone-900 dark:text-stone-100 tracking-tight">
+                {t("settings.about_app")}
+              </p>
+              <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
+                {t("settings.about_tagline")}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-stone-600 dark:text-stone-300">
+              <span>{t("settings.about_version")}: {appVersion}</span>
+              <span>{t("settings.about_author")}</span>
+              <span className="text-stone-500 dark:text-stone-400">{t("settings.about_license")}</span>
+            </div>
+            <a
+              href="https://github.com/pedroserodio1/readito-desktop-app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm font-medium text-brand hover:text-brand/80 transition-colors"
+            >
+              <ExternalLink className="w-4 h-4" strokeWidth={1.75} />
+              {t("settings.about_github")}
+            </a>
           </div>
         </section>
         )}

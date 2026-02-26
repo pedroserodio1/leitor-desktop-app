@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { ArrowDownUp, Filter, Library as LibraryIcon, Plus, Search, Settings } from "lucide-react";
+import { ArrowDownUp, Bookmark, ChevronDown, Filter, Library as LibraryIcon, Plus, Search, Settings } from "lucide-react";
 import { BookCard } from "./BookCard";
 import { AddBookModal } from "./AddBookModal";
 import { useLibrary } from "../../hooks/useLibrary";
@@ -44,7 +44,19 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onSelectBook, onRead, 
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
   const [filterShelf, setFilterShelf] = useState<FilterShelf>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [showShelfDropdown, setShowShelfDropdown] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const shelfDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (showShelfDropdown && shelfDropdownRef.current && !shelfDropdownRef.current.contains(e.target as Node)) {
+        setShowShelfDropdown(false);
+      }
+    };
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, [showShelfDropdown]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -207,12 +219,12 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onSelectBook, onRead, 
           <>
             {books.length > 0 && (
               <div className="flex flex-wrap items-center gap-3 mb-6">
-                <div className="flex items-center gap-2">
-                  <ArrowDownUp className="w-4 h-4 text-stone-400" strokeWidth={1.75} />
+                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-stone-100 dark:bg-stone-800/80">
+                  <ArrowDownUp className="w-4 h-4 text-stone-500 dark:text-stone-400" strokeWidth={1.75} />
                   <select
                     value={sortOrder}
                     onChange={(e) => setSortOrder(e.target.value as SortOrder)}
-                    className="px-3 py-1.5 rounded-lg bg-stone-100 dark:bg-stone-800 border-0 text-sm text-stone-700 dark:text-stone-200"
+                    className="bg-transparent border-0 text-sm font-medium text-stone-700 dark:text-stone-200 focus:outline-none cursor-pointer pr-6"
                   >
                     <option value="addedAt">{t("library.sort_added")}</option>
                     <option value="title">{t("library.sort_title")}</option>
@@ -222,46 +234,80 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onSelectBook, onRead, 
                 <button
                   type="button"
                   onClick={() => setShowFilters((s) => !s)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm ${showFilters ? "bg-brand/20 text-brand" : "bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400"}`}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${showFilters ? "bg-brand/15 dark:bg-brand/25 text-brand ring-1 ring-brand/30" : "bg-stone-100 dark:bg-stone-800/80 text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100"}`}
                 >
                   <Filter className="w-4 h-4" strokeWidth={1.75} />
                   {t("library.filter_all")}
                 </button>
                 {showFilters && (
-                  <div className="flex flex-wrap gap-2">
-                    <select
-                      value={filterFormat}
-                      onChange={(e) => setFilterFormat(e.target.value as FilterFormat)}
-                      className="px-3 py-1.5 rounded-lg bg-stone-100 dark:bg-stone-800 border-0 text-sm"
-                    >
-                      <option value="all">{t("library.filter_all")}</option>
-                      <option value="images">{t("library.filter_format_images")}</option>
-                      <option value="pdf">{t("library.filter_format_pdf")}</option>
-                      <option value="epub">{t("library.filter_format_epub")}</option>
-                      <option value="archive">{t("library.filter_format_archive")}</option>
-                    </select>
-                    <select
-                      value={filterStatus}
-                      onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
-                      className="px-3 py-1.5 rounded-lg bg-stone-100 dark:bg-stone-800 border-0 text-sm"
-                    >
-                      <option value="all">{t("library.filter_status_all")}</option>
-                      <option value="not_started">{t("library.filter_status_not_started")}</option>
-                      <option value="reading">{t("library.filter_status_reading")}</option>
-                      <option value="completed">{t("library.filter_status_completed")}</option>
-                    </select>
-                    <select
-                      value={filterShelf ?? ""}
-                      onChange={(e) => setFilterShelf(e.target.value || null)}
-                      className="px-3 py-1.5 rounded-lg bg-stone-100 dark:bg-stone-800 border-0 text-sm"
-                    >
-                      <option value="">{t("library.filter_all")}</option>
-                      {shelves.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name}
-                        </option>
-                      ))}
-                    </select>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-stone-100 dark:bg-stone-800/80">
+                      <select
+                        value={filterFormat}
+                        onChange={(e) => setFilterFormat(e.target.value as FilterFormat)}
+                        className="bg-transparent border-0 text-sm font-medium text-stone-700 dark:text-stone-200 focus:outline-none cursor-pointer pr-5"
+                      >
+                        <option value="all">{t("library.filter_all")}</option>
+                        <option value="images">{t("library.filter_format_images")}</option>
+                        <option value="pdf">{t("library.filter_format_pdf")}</option>
+                        <option value="epub">{t("library.filter_format_epub")}</option>
+                        <option value="archive">{t("library.filter_format_archive")}</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-stone-100 dark:bg-stone-800/80">
+                      <select
+                        value={filterStatus}
+                        onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
+                        className="bg-transparent border-0 text-sm font-medium text-stone-700 dark:text-stone-200 focus:outline-none cursor-pointer pr-5"
+                      >
+                        <option value="all">{t("library.filter_status_all")}</option>
+                        <option value="not_started">{t("library.filter_status_not_started")}</option>
+                        <option value="reading">{t("library.filter_status_reading")}</option>
+                        <option value="completed">{t("library.filter_status_completed")}</option>
+                      </select>
+                    </div>
+                    <div className="relative" ref={shelfDropdownRef}>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowShelfDropdown((s) => !s);
+                        }}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors min-w-[140px] justify-between ${filterShelf ? "bg-brand/15 dark:bg-brand/25 text-brand ring-1 ring-brand/30" : "bg-stone-100 dark:bg-stone-800/80 text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100"}`}
+                      >
+                        <Bookmark className="w-4 h-4 shrink-0" strokeWidth={1.75} />
+                        <span className="truncate">
+                          {filterShelf ? shelves.find((s) => s.id === filterShelf)?.name ?? t("library.shelves") : t("library.shelves")}
+                        </span>
+                        <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${showShelfDropdown ? "rotate-180" : ""}`} strokeWidth={2} />
+                      </button>
+                      {showShelfDropdown && (
+                        <div className="absolute left-0 top-full mt-1.5 py-1.5 min-w-[180px] rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 shadow-xl z-30">
+                          <button
+                            type="button"
+                            onClick={() => { setFilterShelf(null); setShowShelfDropdown(false); }}
+                            className={`w-full px-4 py-2.5 text-left text-sm font-medium transition-colors ${!filterShelf ? "bg-brand/10 dark:bg-brand/20 text-brand" : "text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800"}`}
+                          >
+                            {t("library.filter_all")}
+                          </button>
+                          {shelves.length === 0 ? (
+                            <p className="px-4 py-3 text-xs text-stone-500 dark:text-stone-400">{t("library.no_shelves", "Nenhuma estante")}</p>
+                          ) : (
+                            shelves.map((s) => (
+                              <button
+                                key={s.id}
+                                type="button"
+                                onClick={() => { setFilterShelf(s.id); setShowShelfDropdown(false); }}
+                                className={`w-full px-4 py-2.5 text-left text-sm font-medium transition-colors flex items-center gap-2 ${filterShelf === s.id ? "bg-brand/10 dark:bg-brand/20 text-brand" : "text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800"}`}
+                              >
+                                <Bookmark className="w-4 h-4 shrink-0" strokeWidth={1.75} />
+                                {s.name}
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

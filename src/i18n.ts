@@ -62,6 +62,7 @@ const resources = {
         filter_status_reading: "Reading",
         filter_status_completed: "Completed",
         shelves: "Shelves",
+        no_shelves: "No shelves yet",
         add_to_shelf: "Add to shelf",
         remove_from_shelf: "Remove from shelf",
         create_shelf: "Create shelf",
@@ -90,6 +91,7 @@ const resources = {
       settings: {
         title: "Settings",
         layout: "Layout",
+        interface: "Interface",
         view_mode: "View Mode",
         reading_direction: "Reading Direction",
         appearance: "Appearance",
@@ -105,11 +107,21 @@ const resources = {
         stats_books_completed: "Completed",
         stats_pages_read: "Pages read",
         philosophy: "Philosophy: The presets in the top bar (Book, Manga, Comic, PDF) are just shortcuts. You can freely change these individual settings at any time without being locked into a mode.",
+        sidebar: "Sidebar",
+        sidebar_show: "Show sidebar",
+        sidebar_hide: "Hide sidebar",
+        fullscreen: "Fullscreen",
+        fullscreen_enter: "Enter fullscreen",
+        fullscreen_exit: "Exit fullscreen",
         general: "General",
         shortcuts: "Keyboard shortcuts",
         about: "About",
         about_version: "Version",
-        about_app: "Readito"
+        about_app: "Readito",
+        about_tagline: "EPUB, PDF and image folder reader. Offline-first.",
+        about_author: "Pedro Serôdio",
+        about_license: "MIT License",
+        about_github: "Source code"
       },
       states: {
         empty: {
@@ -198,6 +210,7 @@ const resources = {
         filter_status_reading: "Em leitura",
         filter_status_completed: "Concluídos",
         shelves: "Estantes",
+        no_shelves: "Nenhuma estante",
         add_to_shelf: "Adicionar à estante",
         remove_from_shelf: "Remover da estante",
         create_shelf: "Criar estante",
@@ -226,6 +239,7 @@ const resources = {
       settings: {
         title: "Configurações",
         layout: "Leiaute",
+        interface: "Interface",
         view_mode: "Modo de Visualização",
         reading_direction: "Direção de Leitura",
         appearance: "Aparência",
@@ -241,11 +255,21 @@ const resources = {
         stats_books_completed: "Concluídos",
         stats_pages_read: "Páginas lidas",
         philosophy: "Filosofia: Os perfis na barra superior (Livro, Mangá, HQ, PDF) são apenas atalhos. Você pode alterar essas configurações individuais livremente a qualquer momento sem ficar preso a um modo.",
+        sidebar: "Barra lateral",
+        sidebar_show: "Mostrar barra lateral",
+        sidebar_hide: "Ocultar barra lateral",
+        fullscreen: "Tela cheia",
+        fullscreen_enter: "Entrar em tela cheia",
+        fullscreen_exit: "Sair da tela cheia",
         general: "Geral",
         shortcuts: "Atalhos de teclado",
         about: "Sobre",
         about_version: "Versão",
-        about_app: "Readito"
+        about_app: "Readito",
+        about_tagline: "Leitor de EPUB, PDF e pastas de imagens. Offline-first.",
+        about_author: "Pedro Serôdio",
+        about_license: "Licença MIT",
+        about_github: "Código fonte"
       },
       states: {
         empty: {
@@ -334,6 +358,7 @@ const resources = {
         filter_status_reading: "En lectura",
         filter_status_completed: "Completados",
         shelves: "Estantes",
+        no_shelves: "Ninguna estante",
         add_to_shelf: "Añadir a estante",
         remove_from_shelf: "Quitar de estante",
         create_shelf: "Crear estante",
@@ -362,6 +387,7 @@ const resources = {
       settings: {
         title: "Ajustes",
         layout: "Diseño",
+        interface: "Interfaz",
         view_mode: "Modo de Vista",
         reading_direction: "Dirección de Lectura",
         appearance: "Apariencia",
@@ -377,11 +403,21 @@ const resources = {
         stats_books_completed: "Completados",
         stats_pages_read: "Páginas leídas",
         philosophy: "Filosofía: Los perfiles en la barra superior (Libro, Manga, Cómic, PDF) son solo atajos. Puedes cambiar estas configuraciones individuales libremente en cualquier momento sin quedarte atascado en un modo.",
+        sidebar: "Barra lateral",
+        sidebar_show: "Mostrar barra lateral",
+        sidebar_hide: "Ocultar barra lateral",
+        fullscreen: "Pantalla completa",
+        fullscreen_enter: "Entrar en pantalla completa",
+        fullscreen_exit: "Salir de pantalla completa",
         general: "General",
         shortcuts: "Atajos de teclado",
         about: "Acerca de",
         about_version: "Versión",
-        about_app: "Readito"
+        about_app: "Readito",
+        about_tagline: "Lector de EPUB, PDF y carpetas de imágenes. Offline-first.",
+        about_author: "Pedro Serôdio",
+        about_license: "Licencia MIT",
+        about_github: "Código fuente"
       },
       states: {
         empty: {
