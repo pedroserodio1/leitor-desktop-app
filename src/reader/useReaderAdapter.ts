@@ -310,12 +310,17 @@ export function useReaderAdapter() {
     }
   }, []);
 
+  const getCachedAspectRatio = useCallback((pageIndex: number): number | undefined => {
+    return adapterRef.current?.getPageAspectRatio?.(pageIndex);
+  }, []);
+
   return {
     adapter: adapterRef,
     openFile,
     openImages,
     loadPaths,
     renderToContainer,
+    getCachedAspectRatio,
     nextPage,
     prevPage,
   };

@@ -1,9 +1,9 @@
 import React from 'react';
 import { useReaderStore } from '../../store/readerStore';
-import { PageView } from './PageView.tsx';
-import { DualPageView } from './DualPageView.tsx';
-import { ScrollView } from './ScrollView.tsx';
-import { EpubScrollView } from './EpubScrollView.tsx';
+import { PageView } from './PageView';
+import { DualPageView } from './DualPageView';
+import { VirtualizedScrollView } from './VirtualizedScrollView';
+import { EpubScrollView } from './EpubScrollView';
 import { EmptyState } from './states/EmptyState.tsx';
 import { LoadingState } from './states/LoadingState.tsx';
 import { ErrorState } from './states/ErrorState.tsx';
@@ -22,7 +22,7 @@ export const ReaderArea: React.FC = () => {
         <div className="w-full h-full bg-white dark:bg-slate-900 overflow-hidden relative">
             {settings.viewMode === 'single' && <PageView />}
             {settings.viewMode === 'dual' && <DualPageView />}
-            {settings.viewMode === 'scroll' && (isEpubScroll ? <EpubScrollView /> : <ScrollView />)}
+            {settings.viewMode === 'scroll' && (isEpubScroll ? <EpubScrollView /> : <VirtualizedScrollView />)}
         </div>
     );
 };

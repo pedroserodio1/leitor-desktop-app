@@ -14,6 +14,9 @@ export interface ReaderAdapter {
 
   getCurrentPage(): number;
 
+  /** Aspect ratio em cache (altura/largura). Usado para displayMode instantâneo no dual page. */
+  getPageAspectRatio?(pageIndex: number): number | undefined;
+
   setZoom?(zoom: number): Promise<void>;
 
   setFontSize?(size: number): Promise<void>;

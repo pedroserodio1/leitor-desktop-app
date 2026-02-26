@@ -1,10 +1,32 @@
 import type { ReaderAdapter } from './ReaderAdapter';
 
 /**
+ * Extrai aspect ratio (altura/largura) de um nó DOM (img ou canvas).
+ */
+function getContentAspectRatio(node: HTMLElement): number {
+  const img = node.querySelector('img');
+  if (img) {
+    if (img.naturalWidth > 0 && img.naturalHeight > 0)
+      return img.naturalHeight / img.naturalWidth;
+    const rect = img.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) return rect.height / rect.width;
+  }
+  const canvas = node.querySelector('canvas');
+  if (canvas) {
+    if (canvas.width > 0 && canvas.height > 0)
+      return canvas.height / canvas.width;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) return rect.height / rect.width;
+  }
+  return 0;
+}
+
+/**
  * BaseAdapter — Abstract base class that provides:
  * 1. Page state tracking (currentPage, totalPages)
- * 2. Sliding-window page cache (current ± 1)
+ * 2. Sliding-window page cache (current ± 3)
  * 3. Pre-render toggle
+ * 4. Aspect ratio cache para displayMode instantâneo no dual page
  *
  * Subclasses must implement:
  * - load()
@@ -22,7 +44,7 @@ export abstract class BaseAdapter implements ReaderAdapter {
 
   // --- Cache ---
   protected pageCache: Map<number, HTMLElement> = new Map();
-  protected maxCacheSize = 6; // current, prev, +3 à frente
+  protected aspectRatioCache: Map<number, number> = new Map();
   protected preRenderEnabled = true;
 
   // -------------------------------------------------------------------
@@ -60,6 +82,8 @@ export abstract class BaseAdapter implements ReaderAdapter {
 
       if (this.preRenderEnabled) {
         this.pageCache.set(pageIndex, node);
+        const ar = getContentAspectRatio(node);
+        if (ar > 0) this.aspectRatioCache.set(pageIndex, ar);
       }
     }
 
@@ -111,39 +135,53 @@ export abstract class BaseAdapter implements ReaderAdapter {
     }
   }
 
+  /**
+   * Retorna aspect ratio em cache (se disponível) para displayMode instantâneo no dual page.
+   */
+  getPageAspectRatio(pageIndex: number): number | undefined {
+    return this.aspectRatioCache.get(pageIndex);
+  }
+
   // -------------------------------------------------------------------
-  // Cache management — sliding window
+  // Cache management — sliding window (3 atrás, 3 à frente)
   // -------------------------------------------------------------------
 
   /**
-   * Evict pages outside the window [current-1, current+3] (1 atrás, 3 à frente).
+   * Evict pages outside the window [current-3, current+3].
    */
   protected maintainCache(centerPage: number): void {
-    const windowStart = Math.max(1, centerPage - 1);
+    const windowStart = Math.max(1, centerPage - 3);
     const windowEnd = Math.min(this.totalPages, centerPage + 3);
 
     for (const [key] of this.pageCache) {
       if (key < windowStart || key > windowEnd) {
         this.pageCache.delete(key);
+        this.aspectRatioCache.delete(key);
       }
     }
   }
 
   /**
-   * Pre-render 1 página atrás e 3 à frente para troca sem piscar.
+   * Pre-render 3 páginas atrás e 3 à frente para troca fluida e cálculo antecipado.
    */
   protected async preRender(centerPage: number): Promise<void> {
-    const adjacentPages = [centerPage - 1, centerPage + 1, centerPage + 2, centerPage + 3].filter(
-      (p) => p >= 1 && p <= this.totalPages && !this.pageCache.has(p)
-    );
+    const adjacentPages = [
+      centerPage - 3,
+      centerPage - 2,
+      centerPage - 1,
+      centerPage + 1,
+      centerPage + 2,
+      centerPage + 3,
+    ].filter((p) => p >= 1 && p <= this.totalPages && !this.pageCache.has(p));
 
     // Render in parallel — each subclass's renderPage is independent
     const renders = adjacentPages.map(async (pageIndex) => {
       try {
         const node = await this.renderPage(pageIndex);
-        // Only store if pre-render is still enabled (user might have toggled mid-render)
         if (this.preRenderEnabled) {
           this.pageCache.set(pageIndex, node);
+          const ar = getContentAspectRatio(node);
+          if (ar > 0) this.aspectRatioCache.set(pageIndex, ar);
         }
       } catch {
         // Silently skip failed pre-renders — they'll be retried on demand
@@ -161,5 +199,6 @@ export abstract class BaseAdapter implements ReaderAdapter {
    */
   protected invalidateCache(): void {
     this.pageCache.clear();
+    this.aspectRatioCache.clear();
   }
 }

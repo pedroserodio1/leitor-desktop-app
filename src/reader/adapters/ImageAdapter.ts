@@ -113,9 +113,14 @@ export class ImageAdapter extends BaseAdapter {
   }
 
   protected async preRender(centerPage: number): Promise<void> {
-    const adjacent = [centerPage - 1, centerPage + 1, centerPage + 2, centerPage + 3].filter(
-      (p) => p >= 1 && p <= this.totalPages
-    );
+    const adjacent = [
+      centerPage - 3,
+      centerPage - 2,
+      centerPage - 1,
+      centerPage + 1,
+      centerPage + 2,
+      centerPage + 3,
+    ].filter((p) => p >= 1 && p <= this.totalPages);
     await this.preloadImages(adjacent);
     await super.preRender(centerPage);
   }

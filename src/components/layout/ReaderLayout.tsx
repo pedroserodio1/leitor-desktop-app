@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useRef } from 'react';
+import React, { useEffect, useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useReaderStore } from '../../store/readerStore';
 import { useReaderAdapterContext } from '../../reader/ReaderAdapterContext';
@@ -14,10 +14,11 @@ const PROGRESS_SAVE_DEBOUNCE_MS = 1200;
 interface ReaderLayoutProps {
   content: { paths: string[]; title: string; bookId: string; volumeId: string };
   onBack?: () => void;
+  onBackToLibrary?: () => void;
 }
 
-export const ReaderLayout: React.FC<ReaderLayoutProps> = ({ content, onBack }) => {
-  const { settings, sidebarOpen, status, currentPage, prevPage, nextPage } = useReaderStore();
+export const ReaderLayout: React.FC<ReaderLayoutProps> = ({ content, onBack, onBackToLibrary }) => {
+  const { settings, sidebarOpen, status, currentPage, totalPages, setCurrentPage, prevPage, nextPage } = useReaderStore();
   const { i18n } = useTranslation();
   const { loadPaths } = useReaderAdapterContext();
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -82,23 +83,100 @@ export const ReaderLayout: React.FC<ReaderLayoutProps> = ({ content, onBack }) =
     };
   }, [content.bookId, content.volumeId, currentPage, status]);
 
+  const [isFullscreen, setIsFullscreen] = React.useState(false);
+  const [showGoToPageModal, setShowGoToPageModal] = React.useState(false);
+  const [goToPageInput, setGoToPageInput] = useState('');
+
+  const toggleFullscreen = useCallback(async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+        setIsFullscreen(true);
+      } else {
+        await document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    } catch {
+      // fullscreen may fail (e.g. iframes)
+    }
+  }, []);
+
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handler);
+    return () => document.removeEventListener('fullscreenchange', handler);
+  }, []);
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (document.fullscreenElement) {
+          document.exitFullscreen();
+        } else if (onBack) {
+          onBack();
+        }
+        return;
+      }
+      if (e.key === 'f' || e.key === 'F') {
+        if (!e.ctrlKey && !e.metaKey) {
+          e.preventDefault();
+          toggleFullscreen();
+        }
+        return;
+      }
+
       if (status !== 'ready') return;
       if (settings.viewMode === 'scroll') return;
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
       const isRtl = settings.direction === 'rtl';
-      if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        if (isRtl) nextPage();
-        else prevPage();
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        if (isRtl) prevPage();
-        else nextPage();
+      const goPrev = () => (isRtl ? nextPage() : prevPage());
+      const goNext = () => (isRtl ? prevPage() : nextPage());
+
+      switch (e.key) {
+        case 'ArrowLeft':
+          e.preventDefault();
+          goPrev();
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          goNext();
+          break;
+        case ' ':
+          e.preventDefault();
+          if (e.shiftKey) goPrev();
+          else goNext();
+          break;
+        case 'PageDown':
+          e.preventDefault();
+          goNext();
+          break;
+        case 'PageUp':
+          e.preventDefault();
+          goPrev();
+          break;
+        case 'Home':
+          e.preventDefault();
+          setCurrentPage(1);
+          break;
+        case 'End':
+          e.preventDefault();
+          setCurrentPage(Math.max(1, totalPages));
+          break;
+        case 'g':
+        case 'G':
+          if (!e.ctrlKey && !e.metaKey) {
+            e.preventDefault();
+            setShowGoToPageModal(true);
+          }
+          break;
+        default:
+          break;
       }
     },
-    [status, settings.viewMode, settings.direction, prevPage, nextPage]
+    [status, settings.viewMode, settings.direction, prevPage, nextPage, onBack, toggleFullscreen, totalPages, setCurrentPage]
   );
 
   useEffect(() => {
@@ -114,17 +192,57 @@ export const ReaderLayout: React.FC<ReaderLayoutProps> = ({ content, onBack }) =
 
   return (
     <div className="flex h-screen w-full overflow-hidden transition-colors duration-300" data-testid="reader-layout">
-      <div
-        className={`flex-shrink-0 h-full border-r border-stone-200 dark:border-stone-800 transition-all duration-300 ease-in-out ${sidebarOpen ? 'w-72 opacity-100' : 'w-0 opacity-0 overflow-hidden'}`}
-      >
-        <Sidebar />
-      </div>
+      {!isFullscreen && (
+        <div
+          className={`flex-shrink-0 h-full border-r border-stone-200 dark:border-stone-800 transition-all duration-300 ease-in-out ${sidebarOpen ? 'w-72 opacity-100' : 'w-0 opacity-0 overflow-hidden'}`}
+        >
+          <Sidebar onBackToLibrary={onBackToLibrary} onOpenSettings={undefined} />
+        </div>
+      )}
 
       <div className="flex-1 flex flex-col relative h-full overflow-hidden bg-stone-100 dark:bg-stone-950">
-        <TopBar onBackToLibrary={onBack} />
+        {!isFullscreen && <TopBar onBackToLibrary={onBack} />}
 
-        <div className="flex-1 relative overflow-hidden">
+        <div
+          className={`flex-1 relative overflow-hidden group ${isFullscreen ? 'bg-black' : 'bg-stone-100 dark:bg-stone-950'}`}
+          onTouchStart={(e) => {
+            if (status !== 'ready' || settings.viewMode === 'scroll') return;
+            (e.currentTarget as HTMLElement).dataset.touchStartX = String(e.touches[0]?.clientX ?? 0);
+          }}
+          onTouchEnd={(e) => {
+            if (status !== 'ready' || settings.viewMode === 'scroll') return;
+            const startX = parseFloat((e.currentTarget as HTMLElement).dataset.touchStartX ?? '0');
+            const endX = e.changedTouches[0]?.clientX ?? 0;
+            const delta = endX - startX;
+            if (Math.abs(delta) < 50) return;
+            const isRtl = settings.direction === 'rtl';
+            if (delta > 0) (isRtl ? nextPage : prevPage)();
+            else (isRtl ? prevPage : nextPage)();
+          }}
+        >
           <ReaderArea />
+          {isFullscreen && status === 'ready' && (
+            <div className="absolute inset-0 z-[100] flex items-end justify-center pb-8 pointer-events-none">
+              <div className="flex gap-2 bg-black/50 backdrop-blur-sm rounded-2xl px-4 py-3 pointer-events-auto opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  type="button"
+                  onClick={settings.direction === 'rtl' ? nextPage : prevPage}
+                  className="p-2 rounded-xl hover:bg-white/20 text-white"
+                  title="Previous"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={settings.direction === 'rtl' ? prevPage : nextPage}
+                  className="p-2 rounded-xl hover:bg-white/20 text-white"
+                  title="Next"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                </button>
+              </div>
+            </div>
+          )}
           {settings.viewMode === 'dual' && (
             <div
               className="absolute inset-0 z-[100] cursor-pointer"
@@ -153,10 +271,81 @@ export const ReaderLayout: React.FC<ReaderLayoutProps> = ({ content, onBack }) =
           )}
         </div>
 
-        <BottomControls />
+        {!isFullscreen && <BottomControls />}
       </div>
 
       <SettingsPanel />
+
+      {showGoToPageModal && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-stone-950/60 backdrop-blur-md"
+          onClick={(e) => e.target === e.currentTarget && setShowGoToPageModal(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="go-to-page-title"
+            className="w-full max-w-sm rounded-2xl bg-white dark:bg-stone-900 shadow-2xl border border-stone-200 dark:border-stone-800 mx-4 p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="go-to-page-title" className="font-heading text-lg font-semibold text-stone-900 dark:text-stone-100 mb-4">
+              {i18n.t('views.go_to_page')}
+            </h2>
+            <input
+              type="number"
+              min={1}
+              max={totalPages}
+              value={goToPageInput}
+              onChange={(e) => setGoToPageInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const n = parseInt(goToPageInput, 10);
+                  if (!isNaN(n) && n >= 1 && n <= totalPages) {
+                    setCurrentPage(n);
+                    setShowGoToPageModal(false);
+                    setGoToPageInput('');
+                  }
+                } else if (e.key === 'Escape') {
+                  setShowGoToPageModal(false);
+                  setGoToPageInput('');
+                }
+              }}
+              placeholder={i18n.t('views.go_to_page_placeholder')}
+              autoFocus
+              className="w-full px-4 py-2.5 rounded-xl bg-stone-100 dark:bg-stone-800 border-0 text-stone-900 dark:text-stone-100 text-sm mb-4"
+            />
+            <p className="text-xs text-stone-500 dark:text-stone-400 mb-4">
+              1 – {totalPages}
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowGoToPageModal(false);
+                  setGoToPageInput('');
+                }}
+                className="px-4 py-2 rounded-xl text-sm font-medium text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800"
+              >
+                {i18n.t('library.book_detail.remove_confirm_no')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const n = parseInt(goToPageInput, 10);
+                  if (!isNaN(n) && n >= 1 && n <= totalPages) {
+                    setCurrentPage(n);
+                    setShowGoToPageModal(false);
+                    setGoToPageInput('');
+                  }
+                }}
+                className="px-4 py-2 rounded-xl text-sm font-medium bg-brand hover:bg-brand-hover text-white"
+              >
+                {i18n.t('views.go')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

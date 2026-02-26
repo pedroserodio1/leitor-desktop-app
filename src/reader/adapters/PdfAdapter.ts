@@ -48,57 +48,27 @@ export class PdfAdapter extends BaseAdapter {
   }
 
   protected async renderPage(pageIndex: number): Promise<HTMLElement> {
-    console.log(`[PdfAdapter] Starting render sequence for page: ${pageIndex}`);
-    console.log(`[PdfAdapter] Current zoom level: ${this.zoom}`);
-
-    if (!this.pdfDocument) {
-      console.error(
-        "[PdfAdapter] Fatal: Attempted to render while pdfDocument is null",
-      );
-      throw new Error("PDF document not loaded");
-    }
+    if (!this.pdfDocument) throw new Error("PDF document not loaded");
 
     try {
-      // Log de progresso: Buscando página
-      console.log(`[PdfAdapter] Fetching page ${pageIndex}...`);
       const page = await this.pdfDocument.getPage(pageIndex);
-
-      // Log de progresso: Calculando Viewport
       const viewport = page.getViewport({ scale: this.zoom * 2 });
-      console.log(
-        `[PdfAdapter] Viewport calculated: ${viewport.width}x${viewport.height}px`,
-        viewport,
-      );
 
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
 
-      if (!ctx) {
-        console.error("[PdfAdapter] Failed to get 2D context from canvas");
-        throw new Error("Canvas context failed");
-      }
+      if (!ctx) throw new Error("Canvas context failed");
 
       canvas.width = viewport.width;
       canvas.height = viewport.height;
+      canvas.style.width = `${viewport.width / 2}px`;
+      canvas.style.height = `${viewport.height / 2}px`;
 
-      // Display at logical size (CSS pixels) while rendering at 2x
-      canvas.style.width = `${viewport.width/ 2}px`;
-      canvas.style.height = `${viewport.height/ 2}px`;
-
-      console.log(
-        `[PdfAdapter] Canvas initialized. Executing page.render()...`,
-      );
-
-      // O "await" aqui é onde a mágica (ou o erro) acontece
       await page.render({
         canvasContext: ctx,
         canvas: canvas,
         viewport: viewport,
       }).promise;
-
-      console.log(
-        `[PdfAdapter] ✅ Render promise resolved for page ${pageIndex}`,
-      );
 
       const wrapper = document.createElement("div");
       wrapper.className = "pdf-page-wrapper"; // Adicionado para facilitar inspeção no DOM
@@ -111,16 +81,8 @@ export class PdfAdapter extends BaseAdapter {
       `;
 
       wrapper.appendChild(canvas);
-
-      console.log(
-        `[PdfAdapter] Wrapper created and canvas appended for page ${pageIndex}`,
-      );
       return wrapper;
     } catch (error) {
-      console.error(
-        `[PdfAdapter] ❌ Error rendering page ${pageIndex}:`,
-        error,
-      );
       throw error;
     }
   }
@@ -132,23 +94,6 @@ export class PdfAdapter extends BaseAdapter {
     if (this.container) {
       await this.render(this.container, this.currentPage);
     }
-  }
-
-  // PdfAdapter.ts
-
-  // Este é o método que o seu useReaderAdapter chama!
-  async render(container: HTMLElement, pageIndex: number): Promise<void> {
-    // 1. Chama a sua função "fábrica" que você postou
-    const pageWrapper = await this.renderPage(pageIndex);
-
-    // 2. AGORA VEM O PULO DO GATO:
-    // Você precisa limpar o container do React e colocar o wrapper lá dentro.
-    container.innerHTML = "";
-    container.appendChild(pageWrapper);
-
-    console.log(
-      `[PdfAdapter] DOM updated: Wrapper added to container for page ${pageIndex}`,
-    );
   }
 
   destroy(): void {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useReaderStore } from '../../store/readerStore';
 import {
@@ -12,18 +12,36 @@ import {
   ArrowRightLeft,
 } from 'lucide-react';
 
+const HIDE_DELAY_MS = 1500;
+
 export const BottomControls: React.FC = () => {
   const { settings, setSetting, status, prevPage, nextPage } = useReaderStore();
   const { t } = useTranslation();
   const [isHovering, setIsHovering] = useState(false);
+  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleMouseEnter = useCallback(() => {
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+    }
+    setIsHovering(true);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    hideTimeoutRef.current = setTimeout(() => {
+      hideTimeoutRef.current = null;
+      setIsHovering(false);
+    }, HIDE_DELAY_MS);
+  }, []);
 
   if (status !== 'ready') return null;
 
   return (
     <div
       className="absolute bottom-0 left-0 w-full h-36 flex items-end justify-center pb-8 z-[110]"
-      onMouseEnter={() => setIsHovering(true)}
-      onMouseLeave={() => setIsHovering(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       <div
         className={`bg-white/95 dark:bg-stone-800/95 backdrop-blur-md border border-stone-200 dark:border-stone-700 rounded-2xl shadow-xl px-6 py-4 flex items-center gap-6 transition-all duration-300 transform ${isHovering ? 'translate-y-0 opacity-100 visible' : 'translate-y-6 opacity-0 invisible'}`}

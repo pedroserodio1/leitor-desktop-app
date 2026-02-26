@@ -1,7 +1,7 @@
 export type ViewMode = 'single' | 'dual' | 'scroll';
 export type AdapterType = 'pdf' | 'epub' | 'image' | 'cbz' | 'rar';
 export type Direction = 'ltr' | 'rtl';
-export type Theme = 'light' | 'dark';
+export type Theme = 'light' | 'dark' | 'system';
 export type ProfilePreset = 'book' | 'manga' | 'comic' | 'pdf';
 export type ReaderStatus = 'empty' | 'loading' | 'ready' | 'error';
 

@@ -4,8 +4,8 @@ import { useReaderStore } from '../../store/readerStore';
 
 /**
  * Scroll view para EPUB: uma única container com flow scrolled-doc.
- * O epub.js não suporta múltiplas renditions simultâneas (ScrollView normal
- * usa vários PageItems, o que causa o erro "Cannot read properties of undefined (reading 'package')").
+ * O epub.js não suporta múltiplas renditions simultâneas (VirtualizedScrollView
+ * usa vários PageSlots, o que causaria erro com epub).
  */
 export const EpubScrollView: React.FC = () => {
     const containerRef = useRef<HTMLDivElement>(null);
