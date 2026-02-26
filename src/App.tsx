@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ReaderLayout } from "./components/layout/ReaderLayout";
 import { LibraryView } from "./components/library/LibraryView";
 import { BookDetailView } from "./components/library/BookDetailView";
@@ -6,7 +6,16 @@ import { BookEditView } from "./components/library/BookEditView";
 import { GlobalSettingsView } from "./components/settings/GlobalSettingsView";
 import { useReaderStore } from "./store/readerStore";
 import { useLibrary } from "./hooks/useLibrary";
-import { getGlobalSettings } from "./services/dbService";
+import {
+  getGlobalSettings,
+  getPendingFileToOpen,
+} from "./services/dbService";
+import {
+  scanFile,
+  loadLibrary,
+  hasBookByPath,
+  persistBook,
+} from "./services/libraryService";
 import type { LibraryBook } from "./types/library";
 
 type ViewState = "library" | "detail" | "reader" | "settings" | "edit";
@@ -51,6 +60,36 @@ function App() {
     bookId: string;
     volumeId: string;
   } | null>(null);
+  const pendingFileHandled = useRef(false);
+
+  useEffect(() => {
+    if (pendingFileHandled.current) return;
+    pendingFileHandled.current = true;
+    getPendingFileToOpen()
+      .then(async (path) => {
+        if (!path) return;
+        try {
+          const book = scanFile(path);
+          const books = await loadLibrary();
+          if (!hasBookByPath(books, book.path)) {
+            await persistBook(book);
+          }
+          const vol = book.volumes[0];
+          const paths = vol.chapters.map((c) => c.path);
+          setSelectedBook(book);
+          setReaderContent({
+            paths,
+            title: book.title,
+            bookId: book.id,
+            volumeId: vol.id,
+          });
+          setView("reader");
+        } catch (e) {
+          console.error("[App] open pending file:", e);
+        }
+      })
+      .catch((e) => console.error("[App] getPendingFileToOpen:", e));
+  }, []);
 
   if (view === "library") {
     return (

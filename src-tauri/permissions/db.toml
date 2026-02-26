@@ -4,6 +4,7 @@ identifier = "allow-db-commands"
 description = "Persist and read books, progress, and settings"
 commands.allow = [
   "add_book",
+  "get_pending_file_to_open",
   "get_books",
   "delete_book",
   "update_book",

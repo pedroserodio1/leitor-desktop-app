@@ -38,6 +38,36 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": ["resources/7z/"]
+    "resources": ["resources/7z/"],
+    "publisher": "Pedro Serôdio",
+    "copyright": "© 2025 Pedro Serôdio. MIT License.",
+    "shortDescription": "Leitor de EPUB, PDF e pastas de imagens (manga/quadrinhos). Offline-first.",
+    "homepage": "https://github.com/pedroserodio1/readito-desktop-app",
+    "category": "Utility",
+    "fileAssociations": [
+      { "ext": ["epub"], "name": "EPUB eBook", "description": "EPUB e-book file", "mimeType": "application/epub+zip" },
+      { "ext": ["pdf"], "name": "PDF Document", "description": "PDF document", "mimeType": "application/pdf" },
+      { "ext": ["cbz"], "name": "Comic Book ZIP", "description": "CBZ comic archive", "mimeType": "application/x-cbz" },
+      { "ext": ["cbr"], "name": "Comic Book RAR", "description": "CBR comic archive", "mimeType": "application/x-cbr" }
+    ],
+    "windows": {
+      "allowDowngrades": false,
+      "nsis": {
+        "installerIcon": "icons/icon.ico",
+        "installMode": "currentUser",
+        "displayLanguageSelector": true,
+        "languages": ["English", "PortugueseBR"],
+        "startMenuFolder": "Readito",
+        "compression": "lzma"
+      }
+    },
+    "linux": {
+      "deb": {
+        "depends": []
+      },
+      "appimage": {
+        "bundleMediaFramework": false
+      }
+    }
   }
 }

@@ -103,3 +103,9 @@ export async function saveGlobalSettings(
 ): Promise<void> {
   await invoke("save_global_settings", { payload });
 }
+
+/** Arquivo passado pela associação do sistema (duplo clique). */
+export async function getPendingFileToOpen(): Promise<string | null> {
+  const result = await invoke<string | null>("get_pending_file_to_open");
+  return result ?? null;
+}
