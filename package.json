@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "e2e": "cd e2e-tests && npm test"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.0",

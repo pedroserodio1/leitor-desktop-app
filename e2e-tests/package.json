@@ -1,0 +1,20 @@
+{
+  "name": "leitor-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "seed": "node scripts/seed-db.cjs",
+    "test": "node scripts/seed-db.cjs && wdio run wdio.conf.cjs",
+    "test:ci": "node scripts/seed-db.cjs && wdio run wdio.conf.cjs --ci"
+  },
+  "dependencies": {
+    "@wdio/cli": "^9.14.0"
+  },
+  "devDependencies": {
+    "@wdio/local-runner": "^9.14.0",
+    "@wdio/mocha-framework": "^9.14.0",
+    "@wdio/spec-reporter": "^9.14.0",
+    "better-sqlite3": "^11.6.0"
+  }
+}
