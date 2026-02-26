@@ -1,0 +1,4 @@
+[[permission]]
+identifier = "allow-archive-commands"
+description = "Extract CBZ/RAR to temp dir and delete on close"
+commands.allow = ["extract_archive", "delete_temp_dir"]

@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+src-tauri/resources/7z/*
+!src-tauri/resources/7z/README.md

@@ -1,5 +1,5 @@
 export type ViewMode = 'single' | 'dual' | 'scroll';
-export type AdapterType = 'pdf' | 'epub' | 'image';
+export type AdapterType = 'pdf' | 'epub' | 'image' | 'cbz' | 'rar';
 export type Direction = 'ltr' | 'rtl';
 export type Theme = 'light' | 'dark';
 export type ProfilePreset = 'book' | 'manga' | 'comic' | 'pdf';

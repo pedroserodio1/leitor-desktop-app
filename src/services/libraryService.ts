@@ -10,7 +10,7 @@ import { join } from "@tauri-apps/api/path";
 import type { LibraryBook, Volume, Chapter } from "../types/library";
 
 const STORAGE_KEY = "library-books";
-const MEDIA_EXT = ["jpg", "jpeg", "png", "webp", "pdf", "epub"];
+const MEDIA_EXT = ["jpg", "jpeg", "png", "webp", "pdf", "epub", "cbz", "zip", "rar"];
 
 function naturalSort(a: string, b: string): number {
   return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });

@@ -78,8 +78,8 @@ export function useLibrary() {
         multiple: false,
         filters: [
           {
-            name: "Livros e Imagens",
-            extensions: ["jpg", "jpeg", "png", "webp", "pdf", "epub"],
+            name: "Livros, arquivos e imagens",
+            extensions: ["jpg", "jpeg", "png", "webp", "pdf", "epub", "cbz", "zip", "rar"],
           },
         ],
       });

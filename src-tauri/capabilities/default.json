@@ -7,10 +7,9 @@
     "core:default",
     "dialog:allow-open",
     "fs:allow-read",
+    "fs:allow-remove",
     "fs:default",
-    {
-      "identifier": "fs:scope",
-      "allow": [{ "path": "**/*" }]
-    }
+    { "identifier": "fs:scope", "allow": [{ "path": "**/*" }] },
+    "allow-archive-commands"
   ]
 }

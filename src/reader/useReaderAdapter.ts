@@ -66,9 +66,10 @@ export function useReaderAdapter() {
     const ext = filePath.split(".").pop()?.toLowerCase() ?? "";
     if (ext === "pdf") return "pdf";
     if (ext === "epub") return "epub";
+    if (ext === "cbz" || ext === "zip") return "cbz";
+    if (ext === "rar") return "rar";
     if (["jpg", "jpeg", "png", "webp", "gif", "bmp", "avif"].includes(ext))
       return "image";
-    // Default to PDF for unknown extensions
     return "pdf";
   }, []);
 
@@ -81,6 +82,10 @@ export function useReaderAdapter() {
           {
             name: "Documents",
             extensions: ["pdf", "epub"],
+          },
+          {
+            name: "Archives",
+            extensions: ["cbz", "zip", "rar"],
           },
           {
             name: "Images",
@@ -106,21 +111,16 @@ export function useReaderAdapter() {
       const adapter = createAdapter(type);
       adapterRef.current = adapter;
 
-      // Read file as binary
-      const fileData = await readFile(filePath as string);
-      const arrayBuffer = fileData.buffer as ArrayBuffer;
-
-      // Load into adapter
-      // PDF.js and epub.js both accept ArrayBuffer
-      // fileData já é um Uint8Array vindo do @tauri-apps/plugin-fs
-
-      if (type === "pdf") {
-        // Passamos o Uint8Array direto. O PdfAdapter agora sabe lidar com ele.
-        await adapter.load(fileData);
-      } else if (type === "epub") {
-        await adapter.load(arrayBuffer);
+      if (type === "pdf" || type === "epub") {
+        const fileData = await readFile(filePath as string);
+        const arrayBuffer = fileData.buffer as ArrayBuffer;
+        if (type === "pdf") {
+          await adapter.load(fileData);
+        } else {
+          await adapter.load(arrayBuffer);
+        }
       } else {
-        // Imagens continuam precisando do PATH para o convertFileSrc
+        // Image, CBZ, RAR: pass path(s). ArchiveAdapter extracts via Tauri.
         await adapter.load(filePath as string);
       }
 
@@ -196,6 +196,18 @@ export function useReaderAdapter() {
           const adapter = createAdapter("image");
           adapterRef.current = adapter;
           await adapter.load(paths);
+          setTitle(title);
+          setTotalPages(adapter.getTotalPages());
+          setCurrentPage(1);
+          setSetting("zoom", 100);
+          setStatus("ready");
+        } else if (ext === "cbz" || ext === "zip" || ext === "rar") {
+          const type: AdapterType = ext === "rar" ? "rar" : "cbz";
+          adapterTypeRef.current = type;
+          setAdapterType(type);
+          const adapter = createAdapter(type);
+          adapterRef.current = adapter;
+          await adapter.load(path);
           setTitle(title);
           setTotalPages(adapter.getTotalPages());
           setCurrentPage(1);

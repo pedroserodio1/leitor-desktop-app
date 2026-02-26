@@ -2,8 +2,9 @@ import type { ReaderAdapter } from './ReaderAdapter';
 import { PdfAdapter } from './PdfAdapter';
 import { EpubAdapter } from './EpubAdapter';
 import { ImageAdapter } from './ImageAdapter';
+import { ArchiveAdapter } from './ArchiveAdapter';
 
-export type AdapterType = 'pdf' | 'epub' | 'image';
+export type AdapterType = 'pdf' | 'epub' | 'image' | 'cbz' | 'rar';
 
 /**
  * Factory function to create the appropriate adapter for a document type.
@@ -25,6 +26,9 @@ export function createAdapter(type: AdapterType): ReaderAdapter {
       return new EpubAdapter();
     case 'image':
       return new ImageAdapter();
+    case 'cbz':
+    case 'rar':
+      return new ArchiveAdapter();
     default:
       throw new Error(`Unknown adapter type: ${type}`);
   }
