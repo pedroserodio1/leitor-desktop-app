@@ -1,20 +1,34 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Library as LibraryIcon, Plus, Settings } from "lucide-react";
+import { convertFileSrc } from "@tauri-apps/api/core";
+import { ArrowDownUp, Filter, Library as LibraryIcon, Plus, Search, Settings } from "lucide-react";
 import { BookCard } from "./BookCard";
 import { AddBookModal } from "./AddBookModal";
 import { useLibrary } from "../../hooks/useLibrary";
+import { useShelves } from "../../hooks/useShelves";
+import { getBookFormat } from "../../services/libraryService";
+import * as db from "../../services/dbService";
 import type { LibraryBook } from "../../types/library";
+
+type SortOrder = "addedAt" | "title" | "progress";
+type FilterFormat = "all" | "images" | "pdf" | "epub" | "archive";
+type FilterStatus = "all" | "not_started" | "reading" | "completed";
+type FilterShelf = string | null; // shelf id or null for all
 
 interface LibraryViewProps {
   onSelectBook: (book: LibraryBook) => void;
+  onRead?: (paths: string[], title: string, bookId: string, volumeId: string) => void;
   onOpenSettings?: () => void;
 }
 
-export const LibraryView: React.FC<LibraryViewProps> = ({ onSelectBook, onOpenSettings }) => {
+export const LibraryView: React.FC<LibraryViewProps> = ({ onSelectBook, onRead, onOpenSettings }) => {
   const { t } = useTranslation();
+  const { shelves } = useShelves();
+  const [shelfFilterBookIds, setShelfFilterBookIds] = useState<string[]>([]);
   const {
     books,
+    recentProgress,
+    progressMap,
     loaded,
     addFromFolder,
     addFromFile,
@@ -24,6 +38,32 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onSelectBook, onOpenSe
   } = useLibrary();
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("addedAt");
+  const [filterFormat, setFilterFormat] = useState<FilterFormat>("all");
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
+  const [filterShelf, setFilterShelf] = useState<FilterShelf>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  useEffect(() => {
+    if (!filterShelf) {
+      setShelfFilterBookIds([]);
+      return;
+    }
+    db.getBooksInShelf(filterShelf).then(setShelfFilterBookIds);
+  }, [filterShelf]);
 
   const handleSelectFolder = useCallback(async () => {
     const book = await addFromFolder();
@@ -47,17 +87,31 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onSelectBook, onOpenSe
   return (
     <div className="h-screen w-full flex flex-col bg-stone-50 dark:bg-stone-950" data-testid="library-view">
       <header className="shrink-0 flex items-center justify-between px-8 py-5 border-b border-stone-200/80 dark:border-stone-800 bg-white/95 dark:bg-stone-900/95 backdrop-blur-sm">
-        <div className="flex items-center gap-4">
-          <div className="p-2 rounded-xl bg-brand/10 dark:bg-brand/20">
+        <div className="flex items-center gap-4 flex-1 min-w-0 max-w-2xl">
+          <div className="p-2 rounded-xl bg-brand/10 dark:bg-brand/20 shrink-0">
             <LibraryIcon className="w-7 h-7 text-brand" strokeWidth={1.75} />
           </div>
-          <h1 className="font-heading text-2xl font-semibold text-stone-900 dark:text-stone-100 tracking-tight">
+          <h1 className="font-heading text-2xl font-semibold text-stone-900 dark:text-stone-100 tracking-tight shrink-0">
             {t("library.title")}
           </h1>
+          {books.length > 0 && (
+            <div className="flex-1 min-w-0 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" strokeWidth={1.75} />
+              <input
+                ref={searchInputRef}
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t("library.search_placeholder")}
+                className="w-full pl-9 pr-4 py-2 rounded-xl bg-stone-100 dark:bg-stone-800 border border-transparent focus:border-brand/50 focus:outline-none text-sm text-stone-900 dark:text-stone-100 placeholder:text-stone-400"
+                aria-label={t("library.search_placeholder")}
+              />
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-3">
           {onOpenSettings && (
-<button
+            <button
             type="button"
             onClick={onOpenSettings}
             data-testid="btn-settings"
@@ -81,6 +135,50 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onSelectBook, onOpenSe
       </header>
 
       <main className="flex-1 overflow-y-auto p-8">
+        {recentProgress.length > 0 && onRead && (
+          <section className="mb-8">
+            <h2 className="text-sm font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-4">
+              {t("library.continue_reading")}
+            </h2>
+            <div className="flex gap-4 overflow-x-auto pb-2">
+              {recentProgress.map((item) => (
+                <button
+                  key={`${item.book.id}-${item.volume.id}`}
+                  type="button"
+                  onClick={() =>
+                    onRead(
+                      item.volume.chapters.map((c) => c.path),
+                      `${item.book.title} — ${item.volume.name}`,
+                      item.book.id,
+                      item.volume.id
+                    )
+                  }
+                  className="flex-shrink-0 w-28 text-left rounded-xl overflow-hidden bg-white dark:bg-stone-900/80 border border-stone-200 dark:border-stone-800 hover:border-brand/40 dark:hover:border-brand/40 transition-all"
+                >
+                  <div className="aspect-[3/4] bg-stone-200 dark:bg-stone-800 flex items-center justify-center overflow-hidden">
+                    {item.book.coverPath ? (
+                      <img
+                        src={convertFileSrc(item.book.coverPath)}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-3xl text-stone-400">📖</span>
+                    )}
+                  </div>
+                  <div className="p-2">
+                    <p className="text-xs font-medium text-stone-900 dark:text-stone-100 truncate">
+                      {item.book.title}
+                    </p>
+                    <p className="text-[10px] text-stone-500 dark:text-stone-400">
+                      {item.pageIndex} / {item.volume.chapters.length}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
         {!loaded ? (
           <div className="flex flex-col items-center justify-center min-h-[60vh] text-stone-500 dark:text-stone-400" data-testid="library-loading">
             {t("library.loading")}
@@ -106,15 +204,98 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onSelectBook, onOpenSe
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6" data-testid="library-grid">
-            {books.map((book) => (
+          <>
+            {books.length > 0 && (
+              <div className="flex flex-wrap items-center gap-3 mb-6">
+                <div className="flex items-center gap-2">
+                  <ArrowDownUp className="w-4 h-4 text-stone-400" strokeWidth={1.75} />
+                  <select
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value as SortOrder)}
+                    className="px-3 py-1.5 rounded-lg bg-stone-100 dark:bg-stone-800 border-0 text-sm text-stone-700 dark:text-stone-200"
+                  >
+                    <option value="addedAt">{t("library.sort_added")}</option>
+                    <option value="title">{t("library.sort_title")}</option>
+                    <option value="progress">{t("library.sort_progress")}</option>
+                  </select>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowFilters((s) => !s)}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm ${showFilters ? "bg-brand/20 text-brand" : "bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400"}`}
+                >
+                  <Filter className="w-4 h-4" strokeWidth={1.75} />
+                  {t("library.filter_all")}
+                </button>
+                {showFilters && (
+                  <div className="flex flex-wrap gap-2">
+                    <select
+                      value={filterFormat}
+                      onChange={(e) => setFilterFormat(e.target.value as FilterFormat)}
+                      className="px-3 py-1.5 rounded-lg bg-stone-100 dark:bg-stone-800 border-0 text-sm"
+                    >
+                      <option value="all">{t("library.filter_all")}</option>
+                      <option value="images">{t("library.filter_format_images")}</option>
+                      <option value="pdf">{t("library.filter_format_pdf")}</option>
+                      <option value="epub">{t("library.filter_format_epub")}</option>
+                      <option value="archive">{t("library.filter_format_archive")}</option>
+                    </select>
+                    <select
+                      value={filterStatus}
+                      onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
+                      className="px-3 py-1.5 rounded-lg bg-stone-100 dark:bg-stone-800 border-0 text-sm"
+                    >
+                      <option value="all">{t("library.filter_status_all")}</option>
+                      <option value="not_started">{t("library.filter_status_not_started")}</option>
+                      <option value="reading">{t("library.filter_status_reading")}</option>
+                      <option value="completed">{t("library.filter_status_completed")}</option>
+                    </select>
+                    <select
+                      value={filterShelf ?? ""}
+                      onChange={(e) => setFilterShelf(e.target.value || null)}
+                      className="px-3 py-1.5 rounded-lg bg-stone-100 dark:bg-stone-800 border-0 text-sm"
+                    >
+                      <option value="">{t("library.filter_all")}</option>
+                      {shelves.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6" data-testid="library-grid">
+            {books
+              .filter((book) => {
+                if (searchQuery.trim() && !book.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+                if (filterFormat !== "all" && getBookFormat(book) !== filterFormat) return false;
+                const prog = progressMap.get(book.id);
+                const status = prog?.status ?? "not_started";
+                if (filterStatus !== "all" && status !== filterStatus) return false;
+                if (filterShelf && !shelfFilterBookIds.includes(book.id)) return false;
+                return true;
+              })
+              .sort((a, b) => {
+                if (sortOrder === "title") return a.title.localeCompare(b.title);
+                if (sortOrder === "progress") {
+                  const pa = progressMap.get(a.id)?.progressPercent ?? 0;
+                  const pb = progressMap.get(b.id)?.progressPercent ?? 0;
+                  return pb - pa;
+                }
+                return b.addedAt - a.addedAt;
+              })
+              .map((book) => (
               <BookCard
                 key={book.id}
                 book={book}
                 onClick={() => onSelectBook(book)}
+                progressPercent={progressMap.get(book.id)?.progressPercent}
               />
             ))}
           </div>
+          </>
         )}
       </main>
 

@@ -1,21 +1,37 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, BookOpen, FileText, ChevronRight } from "lucide-react";
+import { convertFileSrc } from "@tauri-apps/api/core";
+import { ArrowLeft, BookOpen, FileText, ChevronRight, Bookmark, Pencil, Book, Trash2, CheckCircle, RotateCcw } from "lucide-react";
+import { useShelves } from "../../hooks/useShelves";
+import { saveProgress } from "../../services/dbService";
 import type { LibraryBook, Volume, Chapter } from "../../types/library";
 
 interface BookDetailViewProps {
   book: LibraryBook;
   onBack: () => void;
   onRead: (paths: string[], title: string, bookId: string, volumeId: string) => void;
+  onEdit?: () => void;
+  onRemove?: (bookId: string) => void;
 }
 
 export const BookDetailView: React.FC<BookDetailViewProps> = ({
   book,
   onBack,
   onRead,
+  onEdit,
+  onRemove,
 }) => {
   const { t } = useTranslation();
+  const { shelves, bookShelfIds, loadBookShelfIds, addToShelf, removeFromShelf } = useShelves();
   const [selectedVolume, setSelectedVolume] = useState<Volume | null>(null);
+  const [showShelfMenu, setShowShelfMenu] = useState(false);
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+
+  useEffect(() => {
+    loadBookShelfIds(book.id);
+  }, [book.id, loadBookShelfIds]);
+
+  const currentShelfIds = bookShelfIds.get(book.id) ?? [];
 
   const hasMultipleVolumes = book.volumes.length > 1;
   const currentChapters = selectedVolume?.chapters ?? book.volumes[0]?.chapters ?? [];
@@ -33,6 +49,32 @@ export const BookDetailView: React.FC<BookDetailViewProps> = ({
   const handleReadVolume = (volume: Volume) => {
     const paths = volume.chapters.map((c) => c.path);
     onRead(paths, volume.name, book.id, volume.id);
+  };
+
+  const handleMarkCompleted = async () => {
+    for (const vol of book.volumes) {
+      await saveProgress({
+        book_id: book.id,
+        volume_id: vol.id,
+        current_chapter_id: null,
+        page_index: vol.chapters.length,
+        scroll_offset: 0,
+        updated_at: Date.now(),
+      });
+    }
+  };
+
+  const handleResetProgress = async () => {
+    for (const vol of book.volumes) {
+      await saveProgress({
+        book_id: book.id,
+        volume_id: vol.id,
+        current_chapter_id: null,
+        page_index: 1,
+        scroll_offset: 0,
+        updated_at: Date.now(),
+      });
+    }
   };
 
   return (
@@ -58,9 +100,170 @@ export const BookDetailView: React.FC<BookDetailViewProps> = ({
                 : t("library.book_detail.chapters")}
           </p>
         </div>
+        <div className="flex items-center gap-2">
+          {onEdit && (
+            <button
+              type="button"
+              onClick={onEdit}
+              data-testid="btn-edit-book"
+              className="p-2.5 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-400"
+              title={t("library.book_detail.edit")}
+            >
+              <Pencil className="w-5 h-5" strokeWidth={1.75} />
+            </button>
+          )}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowShelfMenu((s) => !s)}
+              className="p-2.5 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-400"
+              title={t("library.add_to_shelf")}
+            >
+              <Bookmark className="w-5 h-5" strokeWidth={1.75} />
+            </button>
+          {showShelfMenu && (
+            <div className="absolute right-0 top-full mt-1 py-2 w-48 rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 shadow-xl z-20">
+              {shelves.map((shelf) => {
+                const isIn = currentShelfIds.includes(shelf.id);
+                return (
+                  <button
+                    key={shelf.id}
+                    type="button"
+                    onClick={async () => {
+                      if (isIn) await removeFromShelf(book.id, shelf.id);
+                      else await addToShelf(book.id, shelf.id);
+                      setShowShelfMenu(false);
+                    }}
+                    className={`w-full px-4 py-2 text-left text-sm ${isIn ? "text-brand font-medium" : "text-stone-700 dark:text-stone-300"}`}
+                  >
+                    {isIn ? "✓ " : ""}{shelf.name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          </div>
+        </div>
       </header>
 
       <main className="flex-1 overflow-y-auto p-8">
+        {!selectedVolume && (
+          <div className="flex flex-col sm:flex-row gap-8 max-w-4xl mb-8">
+            <div className="shrink-0 w-36 sm:w-48">
+              <div className="aspect-[3/4] rounded-2xl overflow-hidden bg-stone-200 dark:bg-stone-800 flex items-center justify-center">
+                {book.coverPath ? (
+                  <img
+                    src={convertFileSrc(book.coverPath)}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <Book className="w-16 h-16 text-stone-400 dark:text-stone-500" strokeWidth={1.25} />
+                )}
+              </div>
+            </div>
+            <div className="flex-1 min-w-0 space-y-3">
+              <h2 className="font-heading text-2xl font-semibold text-stone-900 dark:text-stone-100">
+                {book.title}
+              </h2>
+              {book.author ? (
+                <p className="text-stone-600 dark:text-stone-300">{book.author}</p>
+              ) : onEdit && (
+                <button
+                  type="button"
+                  onClick={onEdit}
+                  className="text-sm text-stone-400 dark:text-stone-500 hover:text-brand transition-colors"
+                >
+                  {t("library.book_detail.add_author")}
+                </button>
+              )}
+              {book.description ? (
+                <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed line-clamp-4">
+                  {book.description}
+                </p>
+              ) : onEdit && (
+                <button
+                  type="button"
+                  onClick={onEdit}
+                  className="text-sm text-stone-400 dark:text-stone-500 hover:text-brand transition-colors"
+                >
+                  {t("library.book_detail.add_description")}
+                </button>
+              )}
+              <div className="flex flex-wrap gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={handleMarkCompleted}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"
+                >
+                  <CheckCircle className="w-4 h-4" strokeWidth={1.75} />
+                  {t("library.book_detail.mark_completed")}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleResetProgress}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"
+                >
+                  <RotateCcw className="w-4 h-4" strokeWidth={1.75} />
+                  {t("library.book_detail.reset_progress")}
+                </button>
+                {onRemove && (
+                  <button
+                    type="button"
+                    onClick={() => setShowRemoveConfirm(true)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" strokeWidth={1.75} />
+                    {t("library.book_detail.remove_from_library")}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showRemoveConfirm && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/60 backdrop-blur-md"
+            onClick={(e) => e.target === e.currentTarget && setShowRemoveConfirm(false)}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="remove-confirm-title"
+              className="w-full max-w-md rounded-3xl bg-white dark:bg-stone-900 shadow-2xl border border-stone-200 dark:border-stone-800 mx-4 overflow-hidden"
+            >
+              <div className="p-6">
+                <h2 id="remove-confirm-title" className="font-heading text-xl font-semibold text-stone-900 dark:text-stone-100 mb-2">
+                  {t("library.book_detail.remove_confirm_title")}
+                </h2>
+                <p className="text-stone-600 dark:text-stone-400 text-sm mb-6">
+                  {t("library.book_detail.remove_confirm_message")}
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setShowRemoveConfirm(false)}
+                    className="px-4 py-2 rounded-xl text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
+                  >
+                    {t("library.book_detail.remove_confirm_no")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onRemove?.(book.id);
+                      setShowRemoveConfirm(false);
+                    }}
+                    className="px-4 py-2 rounded-xl text-sm font-medium bg-amber-600 hover:bg-amber-700 text-white transition-colors"
+                  >
+                    {t("library.book_detail.remove_confirm_yes")}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {!selectedVolume && hasMultipleVolumes ? (
           <div className="space-y-3 max-w-xl">
             {book.volumes.map((volume) => (

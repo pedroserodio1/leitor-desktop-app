@@ -8,30 +8,56 @@ import {
   scanFolder,
   scanFile,
   loadLibrary,
+  loadRecentProgress,
   persistBook,
   removeBookFromBackend,
   hasBookByPath,
+  computeBooksWithProgress,
 } from "../services/libraryService";
+import * as db from "../services/dbService";
 import type { LibraryBook } from "../types/library";
+
+const RECENT_LIMIT = 5;
 
 export function useLibrary() {
   const [books, setBooks] = useState<LibraryBook[]>([]);
+  const [recentProgress, setRecentProgress] = useState<
+    Awaited<ReturnType<typeof loadRecentProgress>>
+  >([]);
+  const [allProgress, setAllProgress] = useState<{ book_id: string; volume_id: string; page_index: number }[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
 
-  useEffect(() => {
-    loadLibrary().then((list) => {
-      setBooks(list);
-      setLoaded(true);
-    });
+  const refresh = useCallback(async () => {
+    const [list, recent, progress] = await Promise.all([
+      loadLibrary(),
+      loadRecentProgress(RECENT_LIMIT),
+      db.getAllProgress(),
+    ]);
+    setBooks(list);
+    setRecentProgress(recent);
+    setAllProgress(progress);
+    setLoaded(true);
   }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   const addBook = useCallback(async (book: LibraryBook) => {
     if (hasBookByPath(books, book.path)) return;
     try {
       await persistBook(book);
-      setBooks((prev) => [...prev, book].sort((a, b) => b.addedAt - a.addedAt));
+      const next = [...books, book].sort((a, b) => b.addedAt - a.addedAt);
+      setBooks(next);
+      Promise.all([
+        loadRecentProgress(RECENT_LIMIT),
+        db.getAllProgress(),
+      ]).then(([recent, progress]) => {
+        setRecentProgress(recent);
+        setAllProgress(progress);
+      });
     } catch (e) {
       console.error("[useLibrary] persistBook:", e);
       setError("import_error");
@@ -123,13 +149,18 @@ export function useLibrary() {
 
   const clearError = useCallback(() => setError(null), []);
 
+  const progressMap = computeBooksWithProgress(books, allProgress);
+
   return {
     books,
+    recentProgress,
+    progressMap,
     loaded,
     addBook,
     removeBook,
     addFromFolder,
     addFromFile,
+    refresh,
     error,
     clearError,
     isImporting,
