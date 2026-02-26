@@ -28,6 +28,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onBackToLibrary }) => {
         {onBackToLibrary ? (
           <button
             onClick={onBackToLibrary}
+            data-testid="btn-back-to-library"
             className="p-2.5 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors text-stone-700 dark:text-stone-300"
             title={t('states.error.back')}
           >

@@ -49,12 +49,13 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({
       className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/60 backdrop-blur-md"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="add-book-title"
-        className="w-full max-w-md rounded-3xl bg-white dark:bg-stone-900 shadow-2xl border border-stone-200 dark:border-stone-800 mx-4 overflow-hidden"
-      >
+<div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="add-book-title"
+      data-testid="add-book-modal"
+      className="w-full max-w-md rounded-3xl bg-white dark:bg-stone-900 shadow-2xl border border-stone-200 dark:border-stone-800 mx-4 overflow-hidden"
+    >
         <div className="flex items-center justify-between p-5 border-b border-stone-100 dark:border-stone-800">
           <h2 id="add-book-title" className="font-heading text-xl font-semibold text-stone-900 dark:text-stone-100">
             {t("library.add_book")}
@@ -73,6 +74,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({
             type="button"
             onClick={handleSelectFolder}
             disabled={isImporting}
+            data-testid="add-book-select-folder"
             className="w-full flex items-center gap-4 p-4 rounded-2xl bg-stone-50 dark:bg-stone-800/80 hover:bg-brand/5 dark:hover:bg-brand/10 border border-stone-200 dark:border-stone-700 transition-all duration-200 text-left disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <div className="p-3.5 rounded-xl bg-brand/15 dark:bg-brand/25">
@@ -92,6 +94,7 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({
             type="button"
             onClick={handleSelectFile}
             disabled={isImporting}
+            data-testid="add-book-select-file"
             className="w-full flex items-center gap-4 p-4 rounded-2xl bg-stone-50 dark:bg-stone-800/80 hover:bg-stone-100 dark:hover:bg-stone-700/50 border border-stone-200 dark:border-stone-700 transition-all duration-200 text-left disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <div className="p-3.5 rounded-xl bg-stone-200 dark:bg-stone-700">

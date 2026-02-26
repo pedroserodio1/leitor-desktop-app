@@ -113,7 +113,7 @@ export const ReaderLayout: React.FC<ReaderLayoutProps> = ({ content, onBack }) =
   }, [settings.language, i18n]);
 
   return (
-    <div className="flex h-screen w-full overflow-hidden transition-colors duration-300">
+    <div className="flex h-screen w-full overflow-hidden transition-colors duration-300" data-testid="reader-layout">
       <div
         className={`flex-shrink-0 h-full border-r border-stone-200 dark:border-stone-800 transition-all duration-300 ease-in-out ${sidebarOpen ? 'w-72 opacity-100' : 'w-0 opacity-0 overflow-hidden'}`}
       >

@@ -20,11 +20,12 @@ export const GlobalSettingsView: React.FC<GlobalSettingsViewProps> = ({ onBack }
   }, [settings.language, i18n]);
 
   return (
-    <div className="h-screen w-full flex flex-col bg-stone-50 dark:bg-stone-950">
+    <div className="h-screen w-full flex flex-col bg-stone-50 dark:bg-stone-950" data-testid="settings-view">
       <header className="shrink-0 flex items-center gap-4 px-8 py-5 border-b border-stone-200/80 dark:border-stone-800 bg-white/95 dark:bg-stone-900/95 backdrop-blur-sm">
         <button
           type="button"
           onClick={onBack}
+          data-testid="btn-back"
           className="p-2.5 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 transition-colors"
           aria-label={t("library.app_settings")}
         >
@@ -55,6 +56,7 @@ export const GlobalSettingsView: React.FC<GlobalSettingsViewProps> = ({ onBack }
                 <button
                   key={theme}
                   type="button"
+                  data-testid={`theme-${theme}`}
                   onClick={() => {
                     setSetting("theme", theme);
                     saveGlobalSettings({ theme }).catch((e) => console.error("[GlobalSettings] saveGlobalSettings:", e));

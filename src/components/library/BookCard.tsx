@@ -28,6 +28,7 @@ export const BookCard: React.FC<BookCardProps> = ({ book, onClick }) => {
     <button
       type="button"
       onClick={onClick}
+      data-testid={`book-card-${book.id}`}
       className="group w-full text-left rounded-2xl overflow-hidden bg-white dark:bg-stone-900/80 border border-stone-200 dark:border-stone-800 hover:border-brand/40 dark:hover:border-brand/40 hover:shadow-xl hover:shadow-stone-200/50 dark:hover:shadow-black/20 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-brand/40 focus:ring-offset-2 focus:ring-offset-stone-50 dark:focus:ring-offset-stone-950"
     >
       <div className="aspect-[3/4] bg-gradient-to-br from-stone-300 to-stone-400 dark:from-stone-700 dark:to-stone-800 flex items-center justify-center">

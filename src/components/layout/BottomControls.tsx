@@ -31,6 +31,7 @@ export const BottomControls: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={prevPage}
+            data-testid="btn-prev-page"
             className="p-2.5 hover:bg-stone-100 dark:hover:bg-stone-700 rounded-xl transition-colors flex items-center justify-center text-stone-700 dark:text-stone-200"
             title={t('controls.prev')}
           >
@@ -38,6 +39,7 @@ export const BottomControls: React.FC = () => {
           </button>
           <button
             onClick={nextPage}
+            data-testid="btn-next-page"
             className="p-2.5 hover:bg-stone-100 dark:hover:bg-stone-700 rounded-xl transition-colors flex items-center justify-center text-stone-700 dark:text-stone-200"
             title={t('controls.next')}
           >
