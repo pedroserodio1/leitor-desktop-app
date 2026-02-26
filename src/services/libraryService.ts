@@ -1,15 +1,13 @@
 /**
- * Serviço de Biblioteca — Scan de pastas/arquivos, persistência
- *
- * Persistência temporária em localStorage.
- * Futuramente: SQLite, metadados, SHA-256, geração de capa.
+ * Serviço de Biblioteca — Scan de pastas/arquivos, persistência via SQLite (Tauri invoke).
  */
 
 import { readDir } from "@tauri-apps/plugin-fs";
 import { join } from "@tauri-apps/api/path";
+import * as db from "./dbService";
+import type { BookWithVolumes } from "../types/db";
 import type { LibraryBook, Volume, Chapter } from "../types/library";
 
-const STORAGE_KEY = "library-books";
 const MEDIA_EXT = ["jpg", "jpeg", "png", "webp", "pdf", "epub", "cbz", "zip", "rar"];
 
 function naturalSort(a: string, b: string): number {
@@ -135,17 +133,62 @@ export function scanFile(filePath: string): LibraryBook {
   };
 }
 
-export function loadLibrary(): LibraryBook[] {
+/** Converte resposta do backend (BookWithVolumes[]) para LibraryBook[]. */
+function mapBookWithVolumesToLibraryBook(b: BookWithVolumes): LibraryBook {
+  return {
+    id: b.book.id,
+    title: b.book.title,
+    path: b.book.path,
+    type: b.book.type as "folder" | "file",
+    addedAt: b.book.added_at,
+    volumes: b.volumes.map((v) => ({
+      id: v.volume.id,
+      name: v.volume.name,
+      chapters: v.chapters.map((c) => ({ id: c.id, name: c.name, path: c.path })),
+    })),
+  };
+}
+
+/** Carrega a biblioteca do banco local (SQLite via Tauri). */
+export async function loadLibrary(): Promise<LibraryBook[]> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
+    const list = await db.getBooks();
+    return list.map(mapBookWithVolumesToLibraryBook).sort((a, b) => b.addedAt - a.addedAt);
+  } catch (e) {
+    console.error("[libraryService] loadLibrary:", e);
     return [];
   }
 }
 
-export function saveLibrary(books: LibraryBook[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
+/** Persiste um livro no banco (chamado ao adicionar). */
+export async function persistBook(book: LibraryBook): Promise<void> {
+  await db.addBook({
+    book: {
+      id: book.id,
+      title: book.title,
+      path: book.path,
+      type: book.type,
+      added_at: book.addedAt,
+      hash: null,
+    },
+    volumes: book.volumes.map((v) => ({
+      id: v.id,
+      book_id: book.id,
+      name: v.name,
+      chapters: v.chapters.map((c, i) => ({
+        id: c.id,
+        volume_id: v.id,
+        name: c.name,
+        path: c.path,
+        position: i,
+      })),
+    })),
+  });
+}
+
+/** Remove um livro do banco. */
+export async function removeBookFromBackend(bookId: string): Promise<void> {
+  await db.deleteBook(bookId);
 }
 
 export function hasBookByPath(books: LibraryBook[], path: string): boolean {

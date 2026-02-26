@@ -1,5 +1,5 @@
 /**
- * Hook useLibrary — Estado da biblioteca, adicionar/remover livros
+ * Hook useLibrary — Estado da biblioteca, adicionar/remover livros (persistência via SQLite).
  */
 
 import { useState, useCallback, useEffect } from "react";
@@ -8,29 +8,43 @@ import {
   scanFolder,
   scanFile,
   loadLibrary,
-  saveLibrary,
+  persistBook,
+  removeBookFromBackend,
   hasBookByPath,
 } from "../services/libraryService";
 import type { LibraryBook } from "../types/library";
 
 export function useLibrary() {
-  const [books, setBooks] = useState<LibraryBook[]>(() => loadLibrary());
+  const [books, setBooks] = useState<LibraryBook[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
 
   useEffect(() => {
-    saveLibrary(books);
-  }, [books]);
-
-  const addBook = useCallback((book: LibraryBook) => {
-    setBooks((prev) => {
-      if (hasBookByPath(prev, book.path)) return prev;
-      return [...prev, book].sort((a, b) => b.addedAt - a.addedAt);
+    loadLibrary().then((list) => {
+      setBooks(list);
+      setLoaded(true);
     });
   }, []);
 
-  const removeBook = useCallback((id: string) => {
-    setBooks((prev) => prev.filter((b) => b.id !== id));
+  const addBook = useCallback(async (book: LibraryBook) => {
+    if (hasBookByPath(books, book.path)) return;
+    try {
+      await persistBook(book);
+      setBooks((prev) => [...prev, book].sort((a, b) => b.addedAt - a.addedAt));
+    } catch (e) {
+      console.error("[useLibrary] persistBook:", e);
+      setError("import_error");
+    }
+  }, [books]);
+
+  const removeBook = useCallback(async (id: string) => {
+    try {
+      await removeBookFromBackend(id);
+      setBooks((prev) => prev.filter((b) => b.id !== id));
+    } catch (e) {
+      console.error("[useLibrary] removeBook:", e);
+    }
   }, []);
 
   const addFromFolder = useCallback(async (): Promise<LibraryBook | null> => {
@@ -53,7 +67,7 @@ export function useLibrary() {
         return null;
       }
 
-      addBook(book);
+      await addBook(book);
       return book;
     } catch (err) {
       const message =
@@ -96,7 +110,7 @@ export function useLibrary() {
         return null;
       }
 
-      addBook(book);
+      await addBook(book);
       return book;
     } catch (err) {
       setError("import_error");
@@ -111,6 +125,7 @@ export function useLibrary() {
 
   return {
     books,
+    loaded,
     addBook,
     removeBook,
     addFromFolder,
