@@ -1,6 +1,26 @@
 import type { ReaderAdapter } from './ReaderAdapter';
 
 /**
+ * Clona um nó, copiando o conteúdo de qualquer canvas dentro dele.
+ * cloneNode(true) não copia o bitmap de um canvas — o clone fica em branco.
+ * Para PDF (que usa canvas), precisamos redesenhar no clone.
+ */
+function cloneNodeWithCanvas(node: HTMLElement): HTMLElement {
+  const clone = node.cloneNode(true) as HTMLElement;
+  const origCanvas = node.querySelector('canvas');
+  const cloneCanvas = clone.querySelector('canvas');
+  if (origCanvas && cloneCanvas && origCanvas.width > 0 && origCanvas.height > 0) {
+    cloneCanvas.width = origCanvas.width;
+    cloneCanvas.height = origCanvas.height;
+    const ctx = cloneCanvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(origCanvas, 0, 0);
+    }
+  }
+  return clone;
+}
+
+/**
  * Extrai aspect ratio (altura/largura) de um nó DOM (img ou canvas).
  */
 function getContentAspectRatio(node: HTMLElement): number {
@@ -87,8 +107,9 @@ export abstract class BaseAdapter implements ReaderAdapter {
       }
     }
 
-    // Clone into container so the cache keeps its own copy
-    container.appendChild(node.cloneNode(true));
+    // Clone into container so the cache keeps its own copy.
+    // Use cloneNodeWithCanvas so canvas content (PDF) is copied; cloneNode alone leaves canvas blank.
+    container.appendChild(cloneNodeWithCanvas(node));
 
     // Maintain cache window & pre-render adjacent pages
     if (this.preRenderEnabled) {
