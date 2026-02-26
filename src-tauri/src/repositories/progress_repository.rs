@@ -52,3 +52,58 @@ pub fn get_progress(
     }
     Ok(None)
 }
+
+/// Lista progresso recente ordenado por updated_at DESC (para "Continuar lendo").
+pub fn list_recent_progress(
+    conn: &rusqlite::Connection,
+    limit: i64,
+) -> crate::Result<Vec<ReadingProgress>> {
+    let mut stmt = conn.prepare(
+        r#"
+        SELECT book_id, volume_id, current_chapter_id, page_index, scroll_offset, updated_at
+        FROM reading_progress
+        ORDER BY updated_at DESC
+        LIMIT ?1
+        "#,
+    )?;
+    let rows = stmt.query_map(params![limit], |row| {
+        Ok(ReadingProgress {
+            book_id: row.get(0)?,
+            volume_id: row.get(1)?,
+            current_chapter_id: row.get(2)?,
+            page_index: row.get(3)?,
+            scroll_offset: row.get(4)?,
+            updated_at: row.get(5)?,
+        })
+    })?;
+    let mut out = Vec::new();
+    for row in rows {
+        out.push(row?);
+    }
+    Ok(out)
+}
+
+/// Lista todos os progressos (para ordenação/filtros por status).
+pub fn list_all_progress(conn: &rusqlite::Connection) -> crate::Result<Vec<ReadingProgress>> {
+    let mut stmt = conn.prepare(
+        r#"
+        SELECT book_id, volume_id, current_chapter_id, page_index, scroll_offset, updated_at
+        FROM reading_progress
+        "#,
+    )?;
+    let rows = stmt.query_map([], |row| {
+        Ok(ReadingProgress {
+            book_id: row.get(0)?,
+            volume_id: row.get(1)?,
+            current_chapter_id: row.get(2)?,
+            page_index: row.get(3)?,
+            scroll_offset: row.get(4)?,
+            updated_at: row.get(5)?,
+        })
+    })?;
+    let mut out = Vec::new();
+    for row in rows {
+        out.push(row?);
+    }
+    Ok(out)
+}

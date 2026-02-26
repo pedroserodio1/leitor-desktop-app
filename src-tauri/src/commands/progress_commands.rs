@@ -34,3 +34,15 @@ pub fn get_progress(
     let conn = db::open(&app)?;
     repositories::get_progress(&conn, &book_id, &volume_id)
 }
+
+#[tauri::command]
+pub fn get_recent_progress(app: AppHandle, limit: i64) -> crate::Result<Vec<ReadingProgress>> {
+    let conn = db::open(&app)?;
+    repositories::list_recent_progress(&conn, limit)
+}
+
+#[tauri::command]
+pub fn get_all_progress(app: AppHandle) -> crate::Result<Vec<ReadingProgress>> {
+    let conn = db::open(&app)?;
+    repositories::list_all_progress(&conn)
+}

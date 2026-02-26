@@ -6,10 +6,19 @@ commands.allow = [
   "add_book",
   "get_books",
   "delete_book",
+  "update_book",
   "save_progress",
   "get_progress",
+  "get_all_progress",
+  "get_recent_progress",
   "save_book_settings",
   "get_book_settings",
   "get_global_settings",
-  "save_global_settings"
+  "save_global_settings",
+  "list_shelves",
+  "create_shelf",
+  "add_book_to_shelf",
+  "remove_book_from_shelf",
+  "get_book_shelf_ids",
+  "get_books_in_shelf"
 ]

@@ -69,7 +69,46 @@ CREATE TABLE IF NOT EXISTS global_settings (
 -- Inserir linha padrão de global_settings se não existir
 INSERT OR IGNORE INTO global_settings (id, theme, default_layout_mode, default_reading_direction, updated_at)
 VALUES (1, 'light', 'single', 'ltr', 0);
+
+-- Estantes / coleções
+CREATE TABLE IF NOT EXISTS shelves (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS book_shelves (
+    book_id TEXT NOT NULL,
+    shelf_id TEXT NOT NULL,
+    PRIMARY KEY (book_id, shelf_id),
+    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
+    FOREIGN KEY (shelf_id) REFERENCES shelves(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_book_shelves_shelf_id ON book_shelves(shelf_id);
 "#;
+
+/// Migração: adicionar colunas author, description, cover_path na tabela books se não existirem.
+fn migrate_books_metadata(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
+    let has_col = |name: &str| -> bool {
+        conn.query_row(
+            "SELECT 1 FROM pragma_table_info('books') WHERE name = ?1 LIMIT 1",
+            [name],
+            |row| row.get::<_, i32>(0),
+        )
+        .map(|v| v == 1)
+        .unwrap_or(false)
+    };
+    if !has_col("author") {
+        conn.execute("ALTER TABLE books ADD COLUMN author TEXT", [])?;
+    }
+    if !has_col("description") {
+        conn.execute("ALTER TABLE books ADD COLUMN description TEXT", [])?;
+    }
+    if !has_col("cover_path") {
+        conn.execute("ALTER TABLE books ADD COLUMN cover_path TEXT", [])?;
+    }
+    Ok(())
+}
 
 /// Migração: se a tabela reading_progress tiver schema antigo (current_volume_id), recria com PK (book_id, volume_id).
 fn migrate_progress_per_volume(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
@@ -103,5 +142,6 @@ fn migrate_progress_per_volume(conn: &rusqlite::Connection) -> rusqlite::Result<
 pub fn run_migrations(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
     conn.execute_batch(SCHEMA_SQL)?;
     migrate_progress_per_volume(conn)?;
+    migrate_books_metadata(conn)?;
     Ok(())
 }

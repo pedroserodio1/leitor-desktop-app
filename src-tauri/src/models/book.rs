@@ -11,6 +11,12 @@ pub struct Book {
     pub book_type: String, // "folder" | "file"
     pub added_at: i64,
     pub hash: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub author: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cover_path: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

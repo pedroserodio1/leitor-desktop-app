@@ -51,6 +51,9 @@ pub fn add_book(app: AppHandle, payload: AddBookPayload) -> crate::Result<()> {
         book_type: payload.book.book_type,
         added_at: payload.book.added_at,
         hash: payload.book.hash,
+        author: None,
+        description: None,
+        cover_path: None,
     };
     repositories::insert_book(&conn, &book)?;
     for v in &payload.volumes {
@@ -114,5 +117,28 @@ pub struct VolumeWithChaptersOut {
 pub fn delete_book(app: AppHandle, book_id: String) -> crate::Result<()> {
     let conn = db::open(&app)?;
     repositories::delete_book(&conn, &book_id)?;
+    Ok(())
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateBookPayload {
+    pub book_id: String,
+    pub title: String,
+    pub author: Option<String>,
+    pub description: Option<String>,
+    pub cover_path: Option<String>,
+}
+
+#[tauri::command]
+pub fn update_book(app: AppHandle, payload: UpdateBookPayload) -> crate::Result<()> {
+    let conn = db::open(&app)?;
+    repositories::update_book(
+        &conn,
+        &payload.book_id,
+        &payload.title,
+        payload.author.as_deref(),
+        payload.description.as_deref(),
+        payload.cover_path.as_deref(),
+    )?;
     Ok(())
 }
