@@ -10,6 +10,17 @@ export interface DbBook {
   type: string;
   added_at: number;
   hash: string | null;
+  author?: string | null;
+  description?: string | null;
+  cover_path?: string | null;
+}
+
+export interface UpdateBookPayload {
+  book_id: string;
+  title: string;
+  author?: string | null;
+  description?: string | null;
+  cover_path?: string | null;
 }
 
 export interface DbVolume {

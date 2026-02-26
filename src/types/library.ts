@@ -23,8 +23,12 @@ export interface LibraryBook {
   type: "folder" | "file";
   volumes: Volume[];
   addedAt: number;
-  /** Reservado para futura detecção de metadados */
+  /** Capa customizada ou derivada do primeiro capítulo */
   coverPath?: string;
+  /** Autor (editável) */
+  author?: string;
+  /** Descrição/sinopse (editável) */
+  description?: string;
 }
 
 /** Seleção para abrir no leitor: volume inteiro ou capítulo específico */
