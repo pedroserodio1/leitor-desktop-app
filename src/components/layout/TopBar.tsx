@@ -1,7 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useReaderStore } from '../../store/readerStore';
-import { Menu, Moon, Sun, Settings, ArrowLeft } from 'lucide-react';
+import { saveGlobalSettings } from '../../services/dbService';
+import { Menu, Moon, Sun, Monitor, Settings, ArrowLeft } from 'lucide-react';
 import { ProfilePresetSelector } from '../settings/ProfilePresetSelector.tsx';
 
 interface TopBarProps {
@@ -75,14 +76,20 @@ export const TopBar: React.FC<TopBarProps> = ({ onBackToLibrary }) => {
         <div className="w-px h-7 bg-stone-200 dark:bg-stone-700 mx-1" />
 
         <button
-          onClick={() => setSetting('theme', settings.theme === 'light' ? 'dark' : 'light')}
+          onClick={() => {
+            const next = settings.theme === 'light' ? 'dark' : settings.theme === 'dark' ? 'system' : 'light';
+            setSetting('theme', next);
+            saveGlobalSettings({ theme: next }).catch((e) => console.error('[TopBar] saveGlobalSettings:', e));
+          }}
           className="p-2.5 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors text-stone-700 dark:text-stone-300"
           title={t('topbar.toggle_theme')}
         >
           {settings.theme === 'light' ? (
+            <Sun className="w-5 h-5" strokeWidth={1.75} />
+          ) : settings.theme === 'dark' ? (
             <Moon className="w-5 h-5" strokeWidth={1.75} />
           ) : (
-            <Sun className="w-5 h-5" strokeWidth={1.75} />
+            <Monitor className="w-5 h-5" strokeWidth={1.75} />
           )}
         </button>
 

@@ -1,7 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useReaderStore } from '../../store/readerStore';
-import { X, Type, SplitSquareHorizontal, Square, ArrowDownToLine, ArrowRightLeft } from 'lucide-react';
+import { saveGlobalSettings } from '../../services/dbService';
+import { X, Type, SplitSquareHorizontal, Square, ArrowDownToLine, ArrowRightLeft, Monitor, Moon, Sun } from 'lucide-react';
 import type { ViewMode, Direction, Theme } from '../../types/reader';
 
 export const SettingsPanel: React.FC = () => {
@@ -97,13 +98,19 @@ export const SettingsPanel: React.FC = () => {
                 {t('settings.theme')}
               </label>
               <div className="flex bg-stone-100 dark:bg-stone-800 rounded-xl p-1.5">
-                {(['light', 'dark'] as Theme[]).map((theme) => (
+                {(['light', 'dark', 'system'] as Theme[]).map((theme) => (
                   <button
                     key={theme}
-                    onClick={() => setSetting('theme', theme)}
-                    className={`flex-1 py-2 text-xs font-medium rounded-lg transition-colors capitalize ${settings.theme === theme ? 'bg-white dark:bg-stone-600 shadow-sm text-brand' : 'text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'}`}
+                    onClick={() => {
+                      setSetting('theme', theme);
+                      saveGlobalSettings({ theme }).catch((e) => console.error('[SettingsPanel] saveGlobalSettings:', e));
+                    }}
+                    className={`flex-1 py-2 text-xs font-medium rounded-lg transition-colors flex items-center justify-center gap-1.5 ${settings.theme === theme ? 'bg-white dark:bg-stone-600 shadow-sm text-brand' : 'text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'}`}
                   >
-                    {theme}
+                    {theme === 'light' && <Sun className="w-4 h-4" strokeWidth={1.75} />}
+                    {theme === 'dark' && <Moon className="w-4 h-4" strokeWidth={1.75} />}
+                    {theme === 'system' && <Monitor className="w-4 h-4" strokeWidth={1.75} />}
+                    <span className="capitalize">{theme === 'system' ? t('settings.theme_system') : theme}</span>
                   </button>
                 ))}
               </div>

@@ -1,9 +1,27 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useReaderStore } from "../../store/readerStore";
 import { saveGlobalSettings } from "../../services/dbService";
-import { ArrowLeft, Moon, Sun, Globe } from "lucide-react";
+import { loadLibrary, computeBooksWithProgress } from "../../services/libraryService";
+import { getAllProgress } from "../../services/dbService";
+import { ArrowLeft, BarChart3, Bookmark, Monitor, Moon, Sun, Globe, Keyboard, Info } from "lucide-react";
+import { useShelves } from "../../hooks/useShelves";
 import type { Theme } from "../../types/reader";
+
+const MOD = typeof navigator !== "undefined" && /Mac|iPhone|iPad/i.test(navigator.userAgent) ? "⌘" : "Ctrl";
+
+const SHORTCUTS: { action: string; key: string }[] = [
+  { action: "Fullscreen", key: "F" },
+  { action: "Back / Exit", key: "Esc" },
+  { action: "Previous page", key: "←" },
+  { action: "Next page", key: "→" },
+  { action: "Next page", key: "Space" },
+  { action: "Previous page", key: "Shift + Space" },
+  { action: "Page up/down", key: "PageUp / PageDown" },
+  { action: "First page", key: "Home" },
+  { action: "Last page", key: "End" },
+  { action: "Search in library", key: `${MOD}+K` },
+];
 
 interface GlobalSettingsViewProps {
   onBack: () => void;
@@ -12,6 +30,41 @@ interface GlobalSettingsViewProps {
 export const GlobalSettingsView: React.FC<GlobalSettingsViewProps> = ({ onBack }) => {
   const { settings, setSetting } = useReaderStore();
   const { t, i18n } = useTranslation();
+  const { shelves, createShelf } = useShelves();
+  const [newShelfName, setNewShelfName] = useState("");
+  const [activeTab, setActiveTab] = useState<"general" | "library" | "shortcuts" | "about">("general");
+  const [stats, setStats] = useState<{
+    totalBooks: number;
+    reading: number;
+    completed: number;
+    pagesRead: number;
+  } | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const [books, allProgress] = await Promise.all([
+        loadLibrary(),
+        getAllProgress(),
+      ]);
+      const progressMap = computeBooksWithProgress(books, allProgress);
+      let reading = 0;
+      let completed = 0;
+      let pagesRead = 0;
+      for (const [, info] of progressMap) {
+        if (info.status === "reading") reading++;
+        if (info.status === "completed") completed++;
+      }
+      for (const p of allProgress) {
+        pagesRead += p.page_index;
+      }
+      setStats({
+        totalBooks: books.length,
+        reading,
+        completed,
+        pagesRead,
+      });
+    })();
+  }, []);
 
   useEffect(() => {
     if (i18n.language !== settings.language) {
@@ -37,12 +90,35 @@ export const GlobalSettingsView: React.FC<GlobalSettingsViewProps> = ({ onBack }
       </header>
 
       <main className="flex-1 overflow-y-auto p-8 max-w-2xl">
+        <div className="flex gap-1 mb-8 p-1 bg-stone-100 dark:bg-stone-800 rounded-xl w-fit">
+          {[
+            { id: "general" as const, label: t("settings.general") },
+            { id: "library" as const, label: t("library.shelves") },
+            { id: "shortcuts" as const, label: t("settings.shortcuts") },
+            { id: "about" as const, label: t("settings.about") },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === tab.id ? "bg-white dark:bg-stone-600 shadow-sm text-brand" : "text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === "general" && (
         <section className="space-y-5">
           <h2 className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider flex items-center gap-2">
             {settings.theme === "light" ? (
               <Sun className="w-4 h-4" strokeWidth={1.75} />
-            ) : (
+            ) : settings.theme === "dark" ? (
               <Moon className="w-4 h-4" strokeWidth={1.75} />
+            ) : (
+              <Monitor className="w-4 h-4" strokeWidth={1.75} />
             )}
             {t("settings.appearance")}
           </h2>
@@ -52,7 +128,7 @@ export const GlobalSettingsView: React.FC<GlobalSettingsViewProps> = ({ onBack }
               {t("settings.theme")}
             </label>
             <div className="flex bg-stone-100 dark:bg-stone-800 rounded-xl p-1.5 gap-1">
-              {(["light", "dark"] as Theme[]).map((theme) => (
+              {(["light", "dark", "system"] as Theme[]).map((theme) => (
                 <button
                   key={theme}
                   type="button"
@@ -69,10 +145,18 @@ export const GlobalSettingsView: React.FC<GlobalSettingsViewProps> = ({ onBack }
                 >
                   {theme === "light" ? (
                     <Sun className="w-5 h-5" strokeWidth={1.75} />
-                  ) : (
+                  ) : theme === "dark" ? (
                     <Moon className="w-5 h-5" strokeWidth={1.75} />
+                  ) : (
+                    <Monitor className="w-5 h-5" strokeWidth={1.75} />
                   )}
-                  <span className="capitalize">{theme === "light" ? t("settings.theme_light") : t("settings.theme_dark")}</span>
+                  <span className="capitalize">
+                    {theme === "light"
+                      ? t("settings.theme_light")
+                      : theme === "dark"
+                        ? t("settings.theme_dark")
+                        : t("settings.theme_system")}
+                  </span>
                 </button>
               ))}
             </div>
@@ -105,12 +189,126 @@ export const GlobalSettingsView: React.FC<GlobalSettingsViewProps> = ({ onBack }
             </div>
           </div>
         </section>
+        )}
 
+        {activeTab === "library" && (
+        <section className="space-y-5">
+          <h2 className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider flex items-center gap-2">
+            <Bookmark className="w-4 h-4" strokeWidth={1.75} />
+            {t("library.shelves")}
+          </h2>
+          <ul className="space-y-2 mb-4">
+            {shelves.map((s) => (
+              <li key={s.id} className="text-sm text-stone-700 dark:text-stone-200">
+                {s.name}
+              </li>
+            ))}
+          </ul>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newShelfName}
+              onChange={(e) => setNewShelfName(e.target.value)}
+              placeholder={t("library.create_shelf")}
+              className="flex-1 px-4 py-2 rounded-xl bg-stone-100 dark:bg-stone-800 border-0 text-sm"
+            />
+            <button
+              type="button"
+              onClick={async () => {
+                const name = newShelfName.trim();
+                if (!name) return;
+                const id = `shelf-${Date.now()}`;
+                await createShelf(id, name);
+                setNewShelfName("");
+              }}
+              className="px-4 py-2 rounded-xl bg-brand text-white text-sm font-medium"
+            >
+              {t("library.create_shelf")}
+            </button>
+          </div>
+        </section>
+        )}
+
+        {activeTab === "shortcuts" && (
+        <section className="space-y-4">
+          <h2 className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider flex items-center gap-2">
+            <Keyboard className="w-4 h-4" strokeWidth={1.75} />
+            {t("settings.shortcuts")}
+          </h2>
+          <div className="rounded-xl border border-stone-200 dark:border-stone-700 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-stone-100 dark:bg-stone-800">
+                  <th className="text-left px-4 py-3 font-medium text-stone-700 dark:text-stone-200">Action</th>
+                  <th className="text-right px-4 py-3 font-medium text-stone-700 dark:text-stone-200">Key</th>
+                </tr>
+              </thead>
+              <tbody>
+                {SHORTCUTS.map((s, i) => (
+                  <tr key={i} className="border-t border-stone-200 dark:border-stone-700">
+                    <td className="px-4 py-2.5 text-stone-700 dark:text-stone-200">{s.action}</td>
+                    <td className="px-4 py-2.5 text-right">
+                      <kbd className="px-2 py-1 rounded bg-stone-200 dark:bg-stone-700 text-stone-800 dark:text-stone-200 font-mono text-xs">
+                        {s.key}
+                      </kbd>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+        )}
+
+        {activeTab === "about" && (
+        <section className="space-y-4">
+          <h2 className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider flex items-center gap-2">
+            <Info className="w-4 h-4" strokeWidth={1.75} />
+            {t("settings.about")}
+          </h2>
+          <div className="p-4 rounded-xl bg-stone-100 dark:bg-stone-800">
+            <p className="font-medium text-stone-900 dark:text-stone-100">{t("settings.about_app")}</p>
+            <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
+              {t("settings.about_version")}: 0.0.0
+            </p>
+          </div>
+        </section>
+        )}
+
+        {activeTab === "general" && stats && (
+          <section className="mt-10 pt-6 border-t border-stone-200 dark:border-stone-800">
+            <h2 className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider flex items-center gap-2 mb-4">
+              <BarChart3 className="w-4 h-4" strokeWidth={1.75} />
+              {t("settings.stats_title")}
+            </h2>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 rounded-xl bg-stone-100 dark:bg-stone-800">
+                <p className="text-2xl font-semibold text-stone-900 dark:text-stone-100">{stats.totalBooks}</p>
+                <p className="text-xs text-stone-500 dark:text-stone-400">{t("settings.stats_books_total")}</p>
+              </div>
+              <div className="p-4 rounded-xl bg-stone-100 dark:bg-stone-800">
+                <p className="text-2xl font-semibold text-brand">{stats.reading}</p>
+                <p className="text-xs text-stone-500 dark:text-stone-400">{t("settings.stats_books_reading")}</p>
+              </div>
+              <div className="p-4 rounded-xl bg-stone-100 dark:bg-stone-800">
+                <p className="text-2xl font-semibold text-teal-600 dark:text-teal-400">{stats.completed}</p>
+                <p className="text-xs text-stone-500 dark:text-stone-400">{t("settings.stats_books_completed")}</p>
+              </div>
+              <div className="p-4 rounded-xl bg-stone-100 dark:bg-stone-800">
+                <p className="text-2xl font-semibold text-stone-900 dark:text-stone-100">{stats.pagesRead}</p>
+                <p className="text-xs text-stone-500 dark:text-stone-400">{t("settings.stats_pages_read")}</p>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {activeTab === "general" && (
         <div className="mt-10 p-4 rounded-2xl bg-teal-50 dark:bg-teal-950/40 border border-teal-100 dark:border-teal-800/50">
           <p className="text-xs text-teal-800 dark:text-teal-200 leading-relaxed">
             {t("settings.philosophy")}
           </p>
         </div>
+        )}
       </main>
     </div>
   );
