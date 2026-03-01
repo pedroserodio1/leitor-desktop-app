@@ -78,14 +78,17 @@ export const TopBar: React.FC<TopBarProps> = ({ onBackToLibrary, isFullscreen, o
 
         <button
           onClick={() => {
-            const next = settings.theme === 'light' ? 'dark' : settings.theme === 'dark' ? 'system' : 'light';
+            const cycle: Array<'light' | 'dark' | 'system'> = ['light', 'dark', 'system'];
+            const idx = cycle.indexOf(settings.theme === 'custom' ? 'light' : settings.theme as 'light' | 'dark' | 'system');
+            const next = cycle[(idx + 1) % cycle.length];
             setSetting('theme', next);
-            saveGlobalSettings({ theme: next }).catch((e) => console.error('[TopBar] saveGlobalSettings:', e));
+            setSetting('customThemeId', null);
+            saveGlobalSettings({ theme: next, custom_theme_id: null }).catch((e) => console.error('[TopBar] saveGlobalSettings:', e));
           }}
           className="p-2.5 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors text-stone-700 dark:text-stone-300"
           title={t('topbar.toggle_theme')}
         >
-          {settings.theme === 'light' ? (
+          {settings.theme === 'light' || settings.theme === 'custom' ? (
             <Sun className="w-5 h-5" strokeWidth={1.75} />
           ) : settings.theme === 'dark' ? (
             <Moon className="w-5 h-5" strokeWidth={1.75} />

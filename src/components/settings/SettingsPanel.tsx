@@ -2,12 +2,16 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useReaderStore } from '../../store/readerStore';
 import { saveGlobalSettings } from '../../services/dbService';
-import { X, Type, SplitSquareHorizontal, Square, ArrowDownToLine, ArrowRightLeft, Monitor, Moon, Sun } from 'lucide-react';
-import type { ViewMode, Direction, Theme } from '../../types/reader';
+import { X, Type, SplitSquareHorizontal, Square, ArrowDownToLine, ArrowRightLeft, Monitor, Moon, Sun, BookOpen } from 'lucide-react';
+import type { ViewMode, Direction, Theme, EpubTheme } from '../../types/reader';
 
 export const SettingsPanel: React.FC = () => {
-  const { settings, setSetting, settingsPanelOpen, toggleSettingsPanel } = useReaderStore();
+  const { settings, setSetting, settingsPanelOpen, toggleSettingsPanel, adapterType } = useReaderStore();
   const { t } = useTranslation();
+
+  const viewModes: ViewMode[] = adapterType === 'epub'
+    ? ['single']
+    : ['single', 'dual', 'scroll'];
 
   return (
     <div
@@ -36,7 +40,7 @@ export const SettingsPanel: React.FC = () => {
               {t('settings.view_mode')}
             </label>
             <div className="flex bg-stone-100 dark:bg-stone-800 rounded-xl p-1.5">
-              {(['single', 'dual', 'scroll'] as ViewMode[]).map((mode) => (
+              {viewModes.map((mode) => (
                 <button
                   key={mode}
                   onClick={() => setSetting('viewMode', mode)}
@@ -103,7 +107,8 @@ export const SettingsPanel: React.FC = () => {
                     key={theme}
                     onClick={() => {
                       setSetting('theme', theme);
-                      saveGlobalSettings({ theme }).catch((e) => console.error('[SettingsPanel] saveGlobalSettings:', e));
+                      setSetting('customThemeId', null);
+                      saveGlobalSettings({ theme, custom_theme_id: null }).catch((e) => console.error('[SettingsPanel] saveGlobalSettings:', e));
                     }}
                     className={`flex-1 py-2 text-xs font-medium rounded-lg transition-colors flex items-center justify-center gap-1.5 ${settings.theme === theme ? 'bg-white dark:bg-stone-600 shadow-sm text-brand' : 'text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'}`}
                   >
@@ -115,6 +120,29 @@ export const SettingsPanel: React.FC = () => {
                 ))}
               </div>
             </div>
+
+            {adapterType === 'epub' && (
+              <div>
+                <label className="text-sm font-medium text-stone-700 dark:text-stone-200 block mb-3">
+                  {t('settings.epub_theme')}
+                </label>
+                <div className="flex flex-wrap gap-1.5 bg-stone-100 dark:bg-stone-800 rounded-xl p-1.5">
+                  {(['light', 'dark', 'sepia', 'system'] as EpubTheme[]).map((epubTheme) => (
+                    <button
+                      key={epubTheme}
+                      onClick={() => setSetting('epubTheme', epubTheme)}
+                      className={`flex-1 min-w-[70px] py-2 text-xs font-medium rounded-lg transition-colors flex items-center justify-center gap-1.5 ${settings.epubTheme === epubTheme ? 'bg-white dark:bg-stone-600 shadow-sm text-brand' : 'text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'}`}
+                    >
+                      {epubTheme === 'light' && <Sun className="w-4 h-4" strokeWidth={1.75} />}
+                      {epubTheme === 'dark' && <Moon className="w-4 h-4" strokeWidth={1.75} />}
+                      {epubTheme === 'sepia' && <BookOpen className="w-4 h-4" strokeWidth={1.75} />}
+                      {epubTheme === 'system' && <Monitor className="w-4 h-4" strokeWidth={1.75} />}
+                      <span className="capitalize">{epubTheme === 'system' ? t('settings.theme_system') : epubTheme}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="pt-2">
               <label className="text-sm font-medium text-stone-700 dark:text-stone-200 flex items-center justify-between mb-3">

@@ -1,13 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useReaderStore } from "../../store/readerStore";
-import { saveGlobalSettings } from "../../services/dbService";
+import {
+  saveGlobalSettings,
+  listCustomThemes,
+  deleteCustomTheme,
+} from "../../services/dbService";
 import { loadLibrary, computeBooksWithProgress } from "../../services/libraryService";
 import { getAllProgress } from "../../services/dbService";
 import { getVersion } from "@tauri-apps/api/app";
-import { ArrowLeft, BarChart3, Bookmark, Monitor, Moon, Sun, Globe, Keyboard, Info, ExternalLink } from "lucide-react";
+import { ArrowLeft, BarChart3, Bookmark, Monitor, Moon, Sun, Globe, Keyboard, Info, ExternalLink, Palette, Plus, Pencil, Trash2 } from "lucide-react";
 import { useShelves } from "../../hooks/useShelves";
+import { CustomThemeModal } from "./CustomThemeModal";
 import type { Theme } from "../../types/reader";
+import type { CustomTheme } from "../../types/db";
 
 const MOD = typeof navigator !== "undefined" && /Mac|iPhone|iPad/i.test(navigator.userAgent) ? "⌘" : "Ctrl";
 
@@ -41,10 +47,16 @@ export const GlobalSettingsView: React.FC<GlobalSettingsViewProps> = ({ onBack }
     pagesRead: number;
   } | null>(null);
   const [appVersion, setAppVersion] = useState<string>("—");
+  const [customThemes, setCustomThemes] = useState<CustomTheme[]>([]);
+  const [themeModal, setThemeModal] = useState<CustomTheme | null | "new">(null);
 
   useEffect(() => {
     getVersion().then(setAppVersion).catch(() => setAppVersion("0.1.0"));
   }, []);
+
+  useEffect(() => {
+    listCustomThemes().then(setCustomThemes).catch(() => setCustomThemes([]));
+  }, [themeModal]);
 
   useEffect(() => {
     (async () => {
@@ -133,7 +145,7 @@ export const GlobalSettingsView: React.FC<GlobalSettingsViewProps> = ({ onBack }
             <label className="text-sm font-medium text-stone-700 dark:text-stone-200 block">
               {t("settings.theme")}
             </label>
-            <div className="flex bg-stone-100 dark:bg-stone-800 rounded-xl p-1.5 gap-1">
+            <div className="flex flex-wrap gap-2">
               {(["light", "dark", "system"] as Theme[]).map((theme) => (
                 <button
                   key={theme}
@@ -141,31 +153,103 @@ export const GlobalSettingsView: React.FC<GlobalSettingsViewProps> = ({ onBack }
                   data-testid={`theme-${theme}`}
                   onClick={() => {
                     setSetting("theme", theme);
-                    saveGlobalSettings({ theme }).catch((e) => console.error("[GlobalSettings] saveGlobalSettings:", e));
+                    setSetting("customThemeId", null);
+                    saveGlobalSettings({ theme, custom_theme_id: null }).catch((e) => console.error("[GlobalSettings] saveGlobalSettings:", e));
                   }}
-                  className={`flex-1 py-3 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
-                    settings.theme === theme
-                      ? "bg-white dark:bg-stone-600 shadow-sm text-brand"
-                      : "text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100"
+                  className={`py-3 px-4 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+                    settings.theme === theme && theme !== "custom"
+                      ? "bg-white dark:bg-stone-600 shadow-sm text-brand ring-1 ring-brand/30"
+                      : "bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100"
                   }`}
                 >
-                  {theme === "light" ? (
-                    <Sun className="w-5 h-5" strokeWidth={1.75} />
-                  ) : theme === "dark" ? (
-                    <Moon className="w-5 h-5" strokeWidth={1.75} />
-                  ) : (
-                    <Monitor className="w-5 h-5" strokeWidth={1.75} />
-                  )}
+                  {theme === "light" ? <Sun className="w-5 h-5" strokeWidth={1.75} /> : theme === "dark" ? <Moon className="w-5 h-5" strokeWidth={1.75} /> : <Monitor className="w-5 h-5" strokeWidth={1.75} />}
                   <span className="capitalize">
-                    {theme === "light"
-                      ? t("settings.theme_light")
-                      : theme === "dark"
-                        ? t("settings.theme_dark")
-                        : t("settings.theme_system")}
+                    {theme === "light" ? t("settings.theme_light") : theme === "dark" ? t("settings.theme_dark") : t("settings.theme_system")}
                   </span>
                 </button>
               ))}
+              {customThemes.map((ct) => (
+                <button
+                  key={ct.id}
+                  type="button"
+                  onClick={() => {
+                    setSetting("theme", "custom");
+                    setSetting("customThemeId", ct.id);
+                    saveGlobalSettings({ theme: "custom", custom_theme_id: ct.id }).catch((e) => console.error("[GlobalSettings] saveGlobalSettings:", e));
+                  }}
+                  className={`py-3 px-4 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+                    settings.theme === "custom" && settings.customThemeId === ct.id
+                      ? "bg-white dark:bg-stone-600 shadow-sm text-brand ring-1 ring-brand/30"
+                      : "bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100"
+                  }`}
+                >
+                  <Palette className="w-5 h-5" strokeWidth={1.75} />
+                  {ct.name}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setThemeModal("new")}
+                className="py-3 px-4 rounded-xl text-sm font-medium flex items-center gap-2 bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 border-2 border-dashed border-stone-300 dark:border-stone-600 hover:border-brand/50 transition-colors"
+              >
+                <Plus className="w-5 h-5" strokeWidth={1.75} />
+                {t("settings.custom_theme_new")}
+              </button>
             </div>
+            {customThemes.length > 0 && (
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setThemeModal("new")}
+                  className="text-sm text-brand hover:text-brand/80 font-medium"
+                >
+                  {t("settings.custom_theme_manage")}
+                </button>
+                <div className="mt-2 space-y-2">
+                  {customThemes.map((ct) => (
+                    <div
+                      key={ct.id}
+                      className="flex items-center justify-between px-4 py-2 rounded-xl bg-stone-100 dark:bg-stone-800"
+                    >
+                      <span className="text-sm font-medium text-stone-700 dark:text-stone-200">{ct.name}</span>
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setThemeModal(ct)}
+                          className="p-2 rounded-lg hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-500 dark:text-stone-400"
+                          title={t("library.book_detail.edit")}
+                        >
+                          <Pencil className="w-4 h-4" strokeWidth={1.75} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            await deleteCustomTheme(ct.id);
+                            if (settings.theme === "custom" && settings.customThemeId === ct.id) {
+                              setSetting("theme", "light");
+                              setSetting("customThemeId", null);
+                              saveGlobalSettings({ theme: "light", custom_theme_id: null }).catch(() => {});
+                            }
+                            setCustomThemes((prev) => prev.filter((t) => t.id !== ct.id));
+                          }}
+                          className="p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-stone-500 dark:text-stone-400 hover:text-red-600"
+                          title={t("settings.custom_theme_delete")}
+                        >
+                          <Trash2 className="w-4 h-4" strokeWidth={1.75} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {themeModal && (
+              <CustomThemeModal
+                theme={themeModal === "new" ? null : themeModal}
+                onClose={() => setThemeModal(null)}
+                onSaved={() => listCustomThemes().then(setCustomThemes)}
+              />
+            )}
           </div>
 
           <div className="pt-4 border-t border-stone-200 dark:border-stone-800">

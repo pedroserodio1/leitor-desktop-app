@@ -12,6 +12,8 @@ export const useReaderStore = create<ReaderState>()(
         zoom: 100,
         fontSize: 16,
         theme: 'light',
+        customThemeId: null,
+        epubTheme: 'light',
         language: 'en',
         preRenderEnabled: true,
       },
@@ -23,6 +25,7 @@ export const useReaderStore = create<ReaderState>()(
       errorMessage: null,
       sidebarOpen: true,
       settingsPanelOpen: false,
+      customThemeRefreshKey: 0,
 
       setSetting: (key, value) =>
         set((state) => ({
@@ -70,6 +73,9 @@ export const useReaderStore = create<ReaderState>()(
 
       toggleSettingsPanel: () =>
         set((state) => ({ settingsPanelOpen: !state.settingsPanelOpen })),
+
+      refreshCustomTheme: () =>
+        set((state) => ({ customThemeRefreshKey: (state.customThemeRefreshKey ?? 0) + 1 })),
     }),
     {
       name: 'reader-storage',

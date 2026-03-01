@@ -6,6 +6,7 @@ export const presets: Record<ProfilePreset, Partial<ReaderSettings>> = {
     direction: 'ltr',
     zoom: 100,
     fontSize: 16,
+    epubTheme: 'sepia',
   },
   manga: {
     viewMode: 'dual',
