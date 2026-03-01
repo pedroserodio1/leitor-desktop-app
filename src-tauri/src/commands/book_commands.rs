@@ -140,5 +140,6 @@ pub fn update_book(app: AppHandle, payload: UpdateBookPayload) -> crate::Result<
         payload.description.as_deref(),
         payload.cover_path.as_deref(),
     )?;
+    repositories::set_metadata_flags(&conn, &payload.book_id, true, true, true, true)?;
     Ok(())
 }

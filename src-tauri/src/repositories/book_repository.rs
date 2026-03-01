@@ -1,7 +1,7 @@
 //! Repositório de livros, volumes e capítulos.
 
-use rusqlite::params;
 use crate::models::{Book, Chapter, Volume};
+use rusqlite::params;
 
 pub fn insert_book(conn: &rusqlite::Connection, book: &Book) -> crate::Result<()> {
     conn.execute(
@@ -74,9 +74,8 @@ pub fn list_books(conn: &rusqlite::Connection) -> crate::Result<Vec<Book>> {
 }
 
 pub fn list_volumes(conn: &rusqlite::Connection, book_id: &str) -> crate::Result<Vec<Volume>> {
-    let mut stmt = conn.prepare(
-        "SELECT id, book_id, name FROM volumes WHERE book_id = ?1 ORDER BY name",
-    )?;
+    let mut stmt =
+        conn.prepare("SELECT id, book_id, name FROM volumes WHERE book_id = ?1 ORDER BY name")?;
     let rows = stmt.query_map([book_id], |row| {
         Ok(Volume {
             id: row.get(0)?,
@@ -128,5 +127,54 @@ pub fn update_book(
         "UPDATE books SET title = ?1, author = ?2, description = ?3, cover_path = ?4 WHERE id = ?5",
         params![title, author, description, cover_path, book_id],
     )?;
+    Ok(())
+}
+
+/// Atualiza apenas os campos fornecidos (usado pelo fluxo de metadados).
+/// Cada Option: Some(val) = atualizar; None = manter atual.
+/// Não altera flags de edição manual.
+pub fn update_book_partial(
+    conn: &rusqlite::Connection,
+    book_id: &str,
+    title: Option<&str>,
+    author: Option<Option<&str>>,
+    description: Option<Option<&str>>,
+    cover_path: Option<Option<&str>>,
+) -> crate::Result<()> {
+    let current = conn.query_row(
+        "SELECT title, author, description, cover_path FROM books WHERE id = ?1",
+        [book_id],
+        |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, Option<String>>(1)?,
+                row.get::<_, Option<String>>(2)?,
+                row.get::<_, Option<String>>(3)?,
+            ))
+        },
+    )?;
+    let new_title = title.unwrap_or(&current.0);
+    let new_author = match author {
+        Some(a) => a,
+        None => current.1.as_deref(),
+    };
+    let new_desc = match description {
+        Some(d) => d,
+        None => current.2.as_deref(),
+    };
+    let new_cover = match cover_path {
+        Some(c) => c,
+        None => current.3.as_deref(),
+    };
+    let rows = conn.execute(
+        "UPDATE books SET title = ?1, author = ?2, description = ?3, cover_path = ?4 WHERE id = ?5",
+        params![new_title, new_author, new_desc, new_cover, book_id],
+    )?;
+    if rows == 0 {
+        log::warn!(
+            "[repo] update_book_partial: nenhuma linha afetada para book_id={} (pode ser id incorreto)",
+            book_id
+        );
+    }
     Ok(())
 }
