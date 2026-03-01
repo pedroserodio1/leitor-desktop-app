@@ -40,19 +40,32 @@ pub fn get_global_settings(app: AppHandle) -> crate::Result<GlobalSettings> {
 #[derive(Debug, Deserialize)]
 pub struct SaveGlobalSettingsPayload {
     pub theme: Option<String>,
+    pub custom_theme_id: Option<String>,
     pub default_layout_mode: Option<String>,
     pub default_reading_direction: Option<String>,
 }
 
 #[tauri::command]
-pub fn save_global_settings(app: AppHandle, payload: SaveGlobalSettingsPayload) -> crate::Result<()> {
+pub fn save_global_settings(
+    app: AppHandle,
+    payload: SaveGlobalSettingsPayload,
+) -> crate::Result<()> {
     let conn = db::open(&app)?;
+    let current = repositories::get_global_settings(&conn)?;
+    let theme = payload.theme.as_deref().unwrap_or(current.theme.as_deref().unwrap_or("light"));
+    let custom_theme_id = if theme == "custom" {
+        payload.custom_theme_id.or(current.custom_theme_id)
+    } else {
+        None
+    };
+    let now = now_secs();
     let s = GlobalSettings {
         id: 1,
-        theme: payload.theme,
-        default_layout_mode: payload.default_layout_mode,
-        default_reading_direction: payload.default_reading_direction,
-        updated_at: now_secs(),
+        theme: Some(theme.to_string()),
+        custom_theme_id,
+        default_layout_mode: payload.default_layout_mode.or(current.default_layout_mode),
+        default_reading_direction: payload.default_reading_direction.or(current.default_reading_direction),
+        updated_at: now,
     };
     repositories::save_global_settings(&conn, &s)?;
     Ok(())

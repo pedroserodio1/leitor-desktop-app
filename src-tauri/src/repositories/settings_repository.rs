@@ -1,7 +1,7 @@
 //! Repositório de configurações por livro e globais.
 
-use rusqlite::params;
 use crate::models::{BookSettings, GlobalSettings};
+use rusqlite::params;
 
 pub fn upsert_book_settings(conn: &rusqlite::Connection, s: &BookSettings) -> crate::Result<()> {
     conn.execute(
@@ -48,15 +48,16 @@ pub fn get_book_settings(
 
 pub fn get_global_settings(conn: &rusqlite::Connection) -> crate::Result<GlobalSettings> {
     let mut stmt = conn.prepare(
-        "SELECT id, theme, default_layout_mode, default_reading_direction, updated_at FROM global_settings WHERE id = 1",
+        "SELECT id, theme, custom_theme_id, default_layout_mode, default_reading_direction, updated_at FROM global_settings WHERE id = 1",
     )?;
     let row = stmt.query_row([], |r| {
         Ok(GlobalSettings {
             id: r.get(0)?,
             theme: r.get(1)?,
-            default_layout_mode: r.get(2)?,
-            default_reading_direction: r.get(3)?,
-            updated_at: r.get(4)?,
+            custom_theme_id: r.get(2)?,
+            default_layout_mode: r.get(3)?,
+            default_reading_direction: r.get(4)?,
+            updated_at: r.get(5)?,
         })
     })?;
     Ok(row)
@@ -65,16 +66,18 @@ pub fn get_global_settings(conn: &rusqlite::Connection) -> crate::Result<GlobalS
 pub fn save_global_settings(conn: &rusqlite::Connection, s: &GlobalSettings) -> crate::Result<()> {
     conn.execute(
         r#"
-        INSERT INTO global_settings (id, theme, default_layout_mode, default_reading_direction, updated_at)
-        VALUES (1, ?1, ?2, ?3, ?4)
+        INSERT INTO global_settings (id, theme, custom_theme_id, default_layout_mode, default_reading_direction, updated_at)
+        VALUES (1, ?1, ?2, ?3, ?4, ?5)
         ON CONFLICT(id) DO UPDATE SET
             theme = excluded.theme,
+            custom_theme_id = excluded.custom_theme_id,
             default_layout_mode = excluded.default_layout_mode,
             default_reading_direction = excluded.default_reading_direction,
             updated_at = excluded.updated_at
         "#,
         params![
             s.theme,
+            s.custom_theme_id,
             s.default_layout_mode,
             s.default_reading_direction,
             s.updated_at,
