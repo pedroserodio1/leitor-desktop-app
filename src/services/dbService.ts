@@ -8,6 +8,7 @@ import type {
   AddBookPayload,
   BookSettings,
   BookWithVolumes,
+  CustomTheme,
   GlobalSettings,
   ReadingProgress,
   SaveGlobalSettingsPayload,
@@ -104,8 +105,92 @@ export async function saveGlobalSettings(
   await invoke("save_global_settings", { payload });
 }
 
+export async function listCustomThemes(): Promise<CustomTheme[]> {
+  return invoke<CustomTheme[]>("list_custom_themes");
+}
+
+export async function getCustomTheme(id: string): Promise<CustomTheme | null> {
+  return invoke<CustomTheme | null>("get_custom_theme", { id });
+}
+
+export async function createCustomTheme(
+  name: string,
+  css: string
+): Promise<CustomTheme> {
+  return invoke<CustomTheme>("create_custom_theme", {
+    payload: { name, css },
+  });
+}
+
+export async function updateCustomTheme(
+  id: string,
+  updates: { name?: string; css?: string }
+): Promise<CustomTheme> {
+  return invoke<CustomTheme>("update_custom_theme", {
+    payload: { id, ...updates },
+  });
+}
+
+export async function deleteCustomTheme(id: string): Promise<void> {
+  await invoke("delete_custom_theme", { id });
+}
+
 /** Arquivo passado pela associação do sistema (duplo clique). */
 export async function getPendingFileToOpen(): Promise<string | null> {
   const result = await invoke<string | null>("get_pending_file_to_open");
   return result ?? null;
+}
+
+export interface MetadataCandidateDto {
+  source: string;
+  source_id: string;
+  media_type: string;
+  title: string;
+  title_alternatives: string[];
+  author: string | null;
+  description: string | null;
+  cover_url: string | null;
+  year: number | null;
+  language: string | null;
+}
+
+export interface RankedCandidateDto {
+  candidate: MetadataCandidateDto;
+  score: number;
+}
+
+export interface SearchMetadataResult {
+  applied: boolean;
+  confirmed: boolean;
+  score: number;
+  source: string;
+  title: string | null;
+  author: string | null;
+  has_description: boolean;
+  has_cover: boolean;
+  candidates: RankedCandidateDto[];
+}
+
+export async function searchMetadata(bookId: string): Promise<SearchMetadataResult> {
+  return invoke<SearchMetadataResult>("search_metadata", { bookId });
+}
+
+export async function applyMetadataCandidate(
+  bookId: string,
+  candidate: MetadataCandidateDto
+): Promise<BookWithVolumes> {
+  // Garante que todos os campos sejam enviados explicitamente (evita perda na serialização)
+  const payload: MetadataCandidateDto = {
+    source: candidate.source,
+    source_id: candidate.source_id,
+    media_type: candidate.media_type,
+    title: candidate.title,
+    title_alternatives: candidate.title_alternatives ?? [],
+    author: candidate.author ?? null,
+    description: candidate.description ?? null,
+    cover_url: candidate.cover_url ?? null,
+    year: candidate.year ?? null,
+    language: candidate.language ?? null,
+  };
+  return invoke<BookWithVolumes>("apply_metadata_candidate", { bookId, candidate: payload });
 }

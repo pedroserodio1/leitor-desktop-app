@@ -90,6 +90,7 @@ export interface BookSettings {
 export interface GlobalSettings {
   id: number;
   theme: string | null;
+  custom_theme_id: string | null;
   default_layout_mode: string | null;
   default_reading_direction: string | null;
   updated_at: number;
@@ -97,6 +98,14 @@ export interface GlobalSettings {
 
 export interface SaveGlobalSettingsPayload {
   theme?: string | null;
+  custom_theme_id?: string | null;
   default_layout_mode?: string | null;
   default_reading_direction?: string | null;
+}
+
+export interface CustomTheme {
+  id: string;
+  name: string;
+  css: string;
+  updated_at: number;
 }
