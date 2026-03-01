@@ -30,14 +30,16 @@ If this project helps you, consider supporting its development:
 - **Direction** — LTR and RTL configurable per book
 - **Presets** — Book, Manga, Comic, PDF
 - **Dual page** — spine shadow effect in the center of the spread
-- **Fullscreen** — cinema mode, prev/next navigation buttons
+- **Fullscreen** — cinema mode with prev/next buttons; sidebar toggle in TopBar
 - **Bottom controls** — auto-hide with delay for distraction-free reading
 
 ### Library
 
 - **Add content** — folders or individual files from your machine
-- **Book cards** — progress bar, metadata preview
+- **Open from file** — open EPUB, PDF, CBZ, CBR via system file association
+- **Book cards** — progress bar, metadata preview; context menu on right-click
 - **Book detail** — ficha do livro with cover, author, description; actions: Edit, Mark completed, Reset progress, Remove
+- **Metadata search** — fetch metadata from Open Library, LoC, AniList, Kitsu, Jikan
 - **Book editing** — title, author, description, cover image
 - **Remove book** — confirmation modal before deletion
 - **Shelves** — organize books into custom collections
@@ -45,7 +47,7 @@ If this project helps you, consider supporting its development:
 ### Settings
 
 - **Tabs** — General, Library, Shortcuts, About
-- **Theme** — Light, Dark, or System (follows OS)
+- **Theme** — Light, Dark, System (follows OS), or custom CSS themes
 - **Keyboard shortcuts table** — reference for all atalhos
 
 ### Keyboard shortcuts
