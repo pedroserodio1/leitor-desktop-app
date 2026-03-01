@@ -110,6 +110,48 @@ fn migrate_books_metadata(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
     Ok(())
 }
 
+/// Migração: criar tabelas do sistema de busca de metadados.
+fn migrate_metadata_search(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
+    conn.execute_batch(
+        r#"
+        -- Flags de edição manual: nunca sobrescrever campos editados pelo usuário
+        CREATE TABLE IF NOT EXISTS book_metadata_flags (
+            book_id TEXT PRIMARY KEY,
+            author_manually_edited INTEGER NOT NULL DEFAULT 0,
+            description_manually_edited INTEGER NOT NULL DEFAULT 0,
+            cover_manually_edited INTEGER NOT NULL DEFAULT 0,
+            title_manually_edited INTEGER NOT NULL DEFAULT 0,
+            FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+        );
+
+        -- Provenance e histórico de buscas
+        CREATE TABLE IF NOT EXISTS metadata_search_results (
+            id TEXT PRIMARY KEY,
+            book_id TEXT NOT NULL,
+            source TEXT NOT NULL,
+            source_id TEXT,
+            score REAL NOT NULL,
+            search_query TEXT NOT NULL,
+            search_date INTEGER NOT NULL,
+            applied INTEGER NOT NULL DEFAULT 0,
+            confirmed INTEGER NOT NULL DEFAULT 0,
+            FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_metadata_search_results_book_id ON metadata_search_results(book_id);
+
+        -- Cache de buscas por query normalizada (TTL configurável)
+        CREATE TABLE IF NOT EXISTS metadata_search_cache (
+            query_normalized TEXT PRIMARY KEY,
+            source TEXT NOT NULL,
+            results_json TEXT NOT NULL,
+            cached_at INTEGER NOT NULL
+        );
+        "#,
+    )?;
+    Ok(())
+}
+
 /// Migração: se a tabela reading_progress tiver schema antigo (current_volume_id), recria com PK (book_id, volume_id).
 fn migrate_progress_per_volume(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
     let has_old: bool = conn.query_row(
@@ -138,10 +180,39 @@ fn migrate_progress_per_volume(conn: &rusqlite::Connection) -> rusqlite::Result<
     Ok(())
 }
 
+/// Migração: criar tabela custom_themes e adicionar custom_theme_id em global_settings.
+fn migrate_custom_themes(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
+    conn.execute_batch(
+        r#"
+        CREATE TABLE IF NOT EXISTS custom_themes (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            css TEXT NOT NULL,
+            updated_at INTEGER NOT NULL
+        );
+        "#,
+    )?;
+    let has_col = |name: &str| -> bool {
+        conn.query_row(
+            "SELECT 1 FROM pragma_table_info('global_settings') WHERE name = ?1 LIMIT 1",
+            [name],
+            |row| row.get::<_, i32>(0),
+        )
+        .map(|v| v == 1)
+        .unwrap_or(false)
+    };
+    if !has_col("custom_theme_id") {
+        conn.execute("ALTER TABLE global_settings ADD COLUMN custom_theme_id TEXT", [])?;
+    }
+    Ok(())
+}
+
 /// Executa o schema (criação de tabelas) e migrações. Idempotente.
 pub fn run_migrations(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
     conn.execute_batch(SCHEMA_SQL)?;
     migrate_progress_per_volume(conn)?;
     migrate_books_metadata(conn)?;
+    migrate_metadata_search(conn)?;
+    migrate_custom_themes(conn)?;
     Ok(())
 }

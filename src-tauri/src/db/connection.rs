@@ -1,9 +1,9 @@
 //! Conexão com o SQLite no diretório de dados da aplicação (API Tauri).
 //! Não salva banco na raiz do projeto.
 
+use rusqlite::Connection;
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
-use rusqlite::Connection;
 
 const DB_FILENAME: &str = "leitor.db";
 
