@@ -15,7 +15,7 @@ import {
 const HIDE_DELAY_MS = 1500;
 
 export const BottomControls: React.FC = () => {
-  const { settings, setSetting, status, prevPage, nextPage } = useReaderStore();
+  const { settings, setSetting, status, prevPage, nextPage, adapterType } = useReaderStore();
   const { t } = useTranslation();
   const [isHovering, setIsHovering] = useState(false);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -68,11 +68,13 @@ export const BottomControls: React.FC = () => {
         <div className="w-px h-9 bg-stone-200 dark:bg-stone-700" />
 
         <div className="flex bg-stone-100 dark:bg-stone-700/80 p-1.5 rounded-xl">
-          {[
+          {([
             { mode: 'single' as const, Icon: Square, key: 'single' },
-            { mode: 'dual' as const, Icon: SplitSquareHorizontal, key: 'dual' },
-            { mode: 'scroll' as const, Icon: ArrowDownToLine, key: 'scroll' },
-          ].map(({ mode, Icon, key }) => (
+            ...(adapterType !== 'epub' ? [
+              { mode: 'dual' as const, Icon: SplitSquareHorizontal, key: 'dual' },
+              { mode: 'scroll' as const, Icon: ArrowDownToLine, key: 'scroll' },
+            ] : []),
+          ]).map(({ mode, Icon, key }) => (
             <button
               key={key}
               onClick={() => setSetting('viewMode', mode)}

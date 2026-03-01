@@ -56,6 +56,14 @@ export function useReaderAdapter() {
     }
   }, [settings.direction]);
 
+  // --- React to epubTheme changes (EPUB) ---
+  useEffect(() => {
+    const adapter = adapterRef.current;
+    if (adapter?.setEpubTheme && adapterTypeRef.current === "epub") {
+      adapter.setEpubTheme(settings.epubTheme);
+    }
+  }, [settings.epubTheme]);
+
   // --- React to preRenderEnabled changes ---
   useEffect(() => {
     adapterRef.current?.setPreRender(settings.preRenderEnabled);
@@ -108,6 +116,9 @@ export function useReaderAdapter() {
       const type = detectType(filePath as string);
       adapterTypeRef.current = type;
       setAdapterType(type);
+      if (type === "epub") {
+        setSetting("viewMode", "single");
+      }
       const adapter = createAdapter(type);
       adapterRef.current = adapter;
 
@@ -225,6 +236,9 @@ export function useReaderAdapter() {
           const type: AdapterType = ext === "pdf" ? "pdf" : "epub";
           adapterTypeRef.current = type;
           setAdapterType(type);
+          if (type === "epub") {
+            setSetting("viewMode", "single");
+          }
           const adapter = createAdapter(type);
           adapterRef.current = adapter;
           if (type === "pdf") {
@@ -286,16 +300,15 @@ export function useReaderAdapter() {
     [],
   );
 
-  // --- Navigation ---
+  // --- Navigation (PDF/cbz/rar/image dual mode; EPUB usa store + rendition.display) ---
   const nextPage = useCallback(async () => {
     const adapter = adapterRef.current;
     if (!adapter) return;
     await adapter.next();
-    // Update store with adapter's position
     const store = useReaderStore.getState();
     const newPage = adapter.getCurrentPage();
     if (newPage !== store.currentPage) {
-      store.nextPage();
+      store.setCurrentPage(newPage);
     }
   }, []);
 
@@ -306,7 +319,7 @@ export function useReaderAdapter() {
     const store = useReaderStore.getState();
     const newPage = adapter.getCurrentPage();
     if (newPage !== store.currentPage) {
-      store.prevPage();
+      store.setCurrentPage(newPage);
     }
   }, []);
 

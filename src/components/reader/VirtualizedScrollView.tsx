@@ -8,6 +8,8 @@ const GAP = 32;
 const PAGE_WIDTH_PCT = 0.8;
 const PAGE_ASPECT = 1.414; // A4 height/width
 const FALLBACK_ITEM_HEIGHT = 600;
+/** 100% zoom in scroll mode displays content ~25% larger than before */
+const BASE_SCALE_SCROLL = 1.25;
 
 export const VirtualizedScrollView: React.FC = () => {
   const parentRef = useRef<HTMLDivElement>(null);
@@ -15,7 +17,7 @@ export const VirtualizedScrollView: React.FC = () => {
   const { t } = useTranslation();
   const lastReportedPageRef = useRef(currentPage);
 
-  const zoomFactor = settings.zoom / 100;
+  const zoomFactor = (settings.zoom / 100) * BASE_SCALE_SCROLL;
 
   const getItemSize = useCallback(() => {
     if (!parentRef.current) return FALLBACK_ITEM_HEIGHT + GAP;

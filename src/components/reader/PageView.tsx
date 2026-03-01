@@ -1,10 +1,11 @@
+import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useReaderStore } from '../../store/readerStore';
 import { useReaderNavigation } from '../../hooks/useReaderNavigation';
 import { PageSlot } from './PageSlot';
 
 export const PageView: React.FC = () => {
-  const { currentPage, settings, totalPages } = useReaderStore();
+  const { currentPage, settings, totalPages, adapterType } = useReaderStore();
   const { t } = useTranslation();
   const { handlePrev, handleNext } = useReaderNavigation({
     viewMode: 'single',
@@ -15,18 +16,52 @@ export const PageView: React.FC = () => {
 
   const transitionClass = settings.direction === 'rtl' ? 'page-transition-prev' : 'page-transition-next';
 
+  const handleAreaPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const pct = rect.width > 0 ? x / rect.width : 0;
+      if (pct < 0.25) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (settings.direction === 'rtl') handleNext();
+        else handlePrev();
+      } else if (pct > 0.75) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (settings.direction === 'rtl') handlePrev();
+        else handleNext();
+      }
+    },
+    [settings.direction, handlePrev, handleNext]
+  );
+
+  const isEpub = adapterType === 'epub';
+
   return (
     <div className="w-full h-full flex items-center justify-center overflow-hidden bg-white dark:bg-slate-900 relative">
-      <div
-        className="absolute left-0 top-0 bottom-0 w-1/4 cursor-pointer z-10"
-        onClick={settings.direction === 'rtl' ? handleNext : handlePrev}
-        title={settings.direction === 'rtl' ? t('controls.next') : t('controls.prev')}
-      />
-      <div
-        className="absolute right-0 top-0 bottom-0 w-1/4 cursor-pointer z-10"
-        onClick={settings.direction === 'rtl' ? handlePrev : handleNext}
-        title={settings.direction === 'rtl' ? t('controls.prev') : t('controls.next')}
-      />
+      {isEpub ? (
+        <div
+          className="absolute inset-0 z-20 cursor-pointer"
+          onPointerDown={handleAreaPointerDown}
+          onClick={(e) => e.preventDefault()}
+          role="presentation"
+          aria-hidden
+        />
+      ) : (
+        <>
+          <div
+            className="absolute left-0 top-0 bottom-0 w-1/4 cursor-pointer z-10"
+            onClick={settings.direction === 'rtl' ? handleNext : handlePrev}
+            title={settings.direction === 'rtl' ? t('controls.next') : t('controls.prev')}
+          />
+          <div
+            className="absolute right-0 top-0 bottom-0 w-1/4 cursor-pointer z-10"
+            onClick={settings.direction === 'rtl' ? handlePrev : handleNext}
+            title={settings.direction === 'rtl' ? t('controls.prev') : t('controls.next')}
+          />
+        </>
+      )}
       <div
         className="reader-page-view absolute inset-0 flex items-center justify-center overflow-hidden"
         dir={settings.direction}
@@ -38,7 +73,7 @@ export const PageView: React.FC = () => {
         <div className="w-full h-full flex items-center justify-center overflow-hidden">
           {currentPage > 0 ? (
             <div
-              key={currentPage}
+              key={adapterType === 'epub' ? 'epub-slot' : currentPage}
               className={`w-full h-full flex items-center justify-center overflow-hidden ${transitionClass}`}
             >
               <PageSlot pageNum={currentPage} />

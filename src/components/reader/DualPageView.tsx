@@ -32,12 +32,15 @@ export const DualPageView: React.FC = () => {
     getCachedAspectRatio,
   });
 
+  const { prevPage: adapterPrev, nextPage: adapterNext } = useReaderAdapterContext();
   const { handlePrev, handleNext } = useReaderNavigation({
     viewMode: 'dual',
     dualDisplayMode: displayMode,
     page1,
     leftPage,
     rightPage,
+    adapterPrevPage: adapterType === 'epub' ? adapterPrev : undefined,
+    adapterNextPage: adapterType === 'epub' ? adapterNext : undefined,
   });
 
   useEffect(() => {
@@ -95,7 +98,7 @@ export const DualPageView: React.FC = () => {
           }}
         >
           <div
-            key={page1}
+            key="epub-slot"
             className={`h-full w-full bg-white dark:bg-slate-900 relative overflow-hidden ${settings.direction === 'rtl' ? 'page-transition-prev' : 'page-transition-next'}`}
           >
             <PageSlot pageNum={page1} />

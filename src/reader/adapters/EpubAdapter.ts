@@ -12,6 +12,16 @@ import { useReaderStore } from '../../store/readerStore';
  * - Generates locations for flat page indexing
  * - Maintains CFI tracking for position preservation
  * - On fontSize change: saves CFI, regenerates locations, remaps position
+ *
+ * Sandbox: O epub.js cria iframes com srcdoc; o navegador pode exibir
+ * "Blocked script execution in 'about:srcdoc'..." se o EPUB contiver scripts.
+ * O epub.js não expõe allowScriptedContent/sandbox em renderTo (ver
+ * futurepress/epub.js#1083). A maioria dos EPUBs não usa scripts; o aviso
+ * no console pode ser ignorado. EPUBs com scripts não terão interatividade.
+ *
+ * Fontes: EPUBs com fontes embedadas podem gerar "Failed to decode downloaded font"
+ * ou "OTS parsing error: cmap" quando a fonte tem subtabelas não suportadas.
+ * O browser faz fallback para fontes do sistema; o aviso no console pode ser ignorado.
  */
 export class EpubAdapter extends BaseAdapter {
   private book: Book | null = null;
@@ -82,6 +92,10 @@ export class EpubAdapter extends BaseAdapter {
       // Apply current font size
       this.rendition.themes.fontSize(`${this.fontSize}px`);
 
+      // Register and apply EPUB themes (light, dark, sepia)
+      this.registerThemes();
+      this.applyEpubTheme(useReaderStore.getState().settings.epubTheme);
+
       // Listen for relocations to track current CFI and page
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       this.rendition.on('relocated', (location: any) => {
@@ -142,6 +156,53 @@ export class EpubAdapter extends BaseAdapter {
     if (this.rendition) {
       this.rendition.direction(dir);
     }
+  }
+
+  setEpubTheme(theme: 'light' | 'dark' | 'sepia' | 'system'): void {
+    this.applyEpubTheme(theme);
+  }
+
+  private registerThemes(): void {
+    if (!this.rendition) return;
+    const themes = this.rendition.themes;
+    themes.register('light', {
+      body: {
+        background: '#ffffff !important',
+        color: '#18181b !important',
+      },
+      a: { color: '#3b82f6 !important' },
+      'a:link': { color: '#3b82f6 !important', 'text-decoration': 'none !important' },
+      img: { 'max-width': '100% !important' },
+    });
+    themes.register('dark', {
+      body: {
+        background: '#0f172a !important',
+        color: '#e2e8f0 !important',
+      },
+      a: { color: '#93c5fd !important' },
+      'a:link': { color: '#93c5fd !important', 'text-decoration': 'none !important' },
+      img: { 'max-width': '100% !important' },
+    });
+    themes.register('sepia', {
+      body: {
+        background: '#f4ecd8 !important',
+        color: '#5c4b37 !important',
+      },
+      a: { color: '#7c6b4a !important' },
+      'a:link': { color: '#7c6b4a !important', 'text-decoration': 'none !important' },
+      img: { 'max-width': '100% !important' },
+    });
+  }
+
+  private resolveEpubTheme(theme: 'light' | 'dark' | 'sepia' | 'system'): 'light' | 'dark' | 'sepia' {
+    if (theme !== 'system') return theme;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+
+  private applyEpubTheme(theme: 'light' | 'dark' | 'sepia' | 'system'): void {
+    if (!this.rendition) return;
+    const resolved = this.resolveEpubTheme(theme);
+    this.rendition.themes.select(resolved);
   }
 
   async setFontSize(size: number): Promise<void> {

@@ -12,6 +12,9 @@ export interface UseReaderNavigationParams {
   leftPage: number | null;
   /** página direita no layout (pode ser page1 em RTL) */
   rightPage: number | null;
+  /** Para EPUB: usa navegação do adapter (rendition.next/prev) para sincronizar número com conteúdo */
+  adapterPrevPage?: () => void | Promise<void>;
+  adapterNextPage?: () => void | Promise<void>;
 }
 
 export interface UseReaderNavigationResult {
@@ -24,6 +27,7 @@ export interface UseReaderNavigationResult {
 /**
  * Centraliza toda a lógica de navegação prev/next/spread/one-large.
  * Corrige o bug em dual-leftOnly quando currentPage === rightPage (usuário travava).
+ * Para EPUB, usa adapterPrevPage/adapterNextPage para que o número só atualize quando o conteúdo mudar.
  */
 export function useReaderNavigation({
   viewMode,
@@ -31,14 +35,19 @@ export function useReaderNavigation({
   page1,
   leftPage,
   rightPage,
+  adapterPrevPage,
+  adapterNextPage,
 }: UseReaderNavigationParams): UseReaderNavigationResult {
   const {
     currentPage,
     totalPages,
-    prevPage,
-    nextPage,
+    prevPage: storePrevPage,
+    nextPage: storeNextPage,
     setCurrentPage,
   } = useReaderStore();
+
+  const prevPage = adapterPrevPage ?? storePrevPage;
+  const nextPage = adapterNextPage ?? storeNextPage;
 
   const goToPage = useCallback(
     (page: number) => {

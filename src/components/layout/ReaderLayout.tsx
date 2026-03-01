@@ -1,13 +1,15 @@
-import React, { useEffect, useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useReaderStore } from '../../store/readerStore';
 import { useReaderAdapterContext } from '../../reader/ReaderAdapterContext';
 import { getProgress, saveProgress } from '../../services/dbService';
+import { showContextMenu, type ContextMenuEntry } from '../../utils/contextMenu';
 import { Sidebar } from './Sidebar.tsx';
 import { TopBar } from './TopBar.tsx';
 import { BottomControls } from './BottomControls.tsx';
 import { ReaderArea } from '../reader/ReaderArea.tsx';
 import { SettingsPanel } from '../settings/SettingsPanel.tsx';
+import type { ProfilePreset } from '../../types/reader';
 
 const PROGRESS_SAVE_DEBOUNCE_MS = 1200;
 
@@ -18,7 +20,7 @@ interface ReaderLayoutProps {
 }
 
 export const ReaderLayout: React.FC<ReaderLayoutProps> = ({ content, onBack, onBackToLibrary }) => {
-  const { settings, sidebarOpen, status, currentPage, totalPages, setCurrentPage, prevPage, nextPage } = useReaderStore();
+  const { settings, sidebarOpen, status, currentPage, totalPages, setCurrentPage, prevPage, nextPage, setSetting, applyPreset, toggleSettingsPanel, adapterType } = useReaderStore();
   const { i18n } = useTranslation();
   const { loadPaths } = useReaderAdapterContext();
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -190,6 +192,84 @@ export const ReaderLayout: React.FC<ReaderLayoutProps> = ({ content, onBack, onB
     }
   }, [settings.language, i18n]);
 
+  const buildReaderMenuItems = useCallback(
+    (): ContextMenuEntry[] => {
+      const isRtl = settings.direction === 'rtl';
+      const goPrev = () => (isRtl ? nextPage() : prevPage());
+      const goNext = () => (isRtl ? prevPage() : nextPage());
+      const items: ContextMenuEntry[] = [
+        { id: 'prev_page', text: i18n.t('context.prev_page', 'Página anterior'), action: goPrev },
+        { id: 'next_page', text: i18n.t('context.next_page', 'Próxima página'), action: goNext },
+        { id: 'go_to_page', text: i18n.t('views.go_to_page'), action: () => setShowGoToPageModal(true) },
+        { id: 'sep1', type: 'separator' },
+        {
+          id: 'view_mode',
+          text: i18n.t('context.view_mode', 'Modo de visualização'),
+          items: [
+            { id: 'single', text: i18n.t('controls.single'), action: () => setSetting('viewMode', 'single') },
+            ...(adapterType !== 'epub' ? [
+              { id: 'dual', text: i18n.t('controls.dual'), action: () => setSetting('viewMode', 'dual') },
+              { id: 'scroll', text: i18n.t('controls.scroll'), action: () => setSetting('viewMode', 'scroll') },
+            ] : []),
+          ],
+        },
+        { id: 'zoom_in', text: i18n.t('context.zoom_in', 'Aumentar zoom'), action: () => setSetting('zoom', Math.min(300, settings.zoom + 10)) },
+        { id: 'zoom_out', text: i18n.t('context.zoom_out', 'Diminuir zoom'), action: () => setSetting('zoom', Math.max(50, settings.zoom - 10)) },
+        { id: 'toggle_direction', text: i18n.t('controls.toggle_direction'), action: () => setSetting('direction', settings.direction === 'ltr' ? 'rtl' : 'ltr') },
+        { id: 'toggle_theme', text: i18n.t('topbar.toggle_theme'), action: () => setSetting('theme', settings.theme === 'dark' ? 'light' : 'dark') },
+        { id: 'fullscreen', text: i18n.t('settings.fullscreen'), action: toggleFullscreen },
+        { id: 'sep2', type: 'separator' },
+        {
+          id: 'read_profile',
+          text: i18n.t('context.read_profile', 'Perfil de leitura'),
+          items: (['book', 'manga', 'comic', 'pdf'] as ProfilePreset[]).map((preset) => ({
+            id: preset,
+            text: i18n.t(`presets.${preset}`),
+            action: () => applyPreset(preset),
+          })),
+        },
+        { id: 'sep3', type: 'separator' },
+        { id: 'settings', text: i18n.t('context.settings'), action: toggleSettingsPanel },
+      ];
+      if (onBack) items.push({ id: 'back', text: i18n.t('context.back', 'Voltar'), action: onBack });
+      if (onBackToLibrary) items.push({ id: 'back_to_library', text: i18n.t('context.back_to_library', 'Voltar para biblioteca'), action: onBackToLibrary });
+      return items;
+    },
+    [
+      settings,
+      adapterType,
+      prevPage,
+      nextPage,
+      setSetting,
+      applyPreset,
+      toggleSettingsPanel,
+      toggleFullscreen,
+      onBack,
+      onBackToLibrary,
+      i18n,
+    ]
+  );
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const custom = e as CustomEvent<{ clientX: number; clientY: number }>;
+      const { clientX, clientY } = custom.detail ?? {};
+      if (typeof clientX === 'number' && typeof clientY === 'number') {
+        showContextMenu(buildReaderMenuItems(), clientX, clientY).catch(() => {});
+      }
+    };
+    window.addEventListener('contextmenu-from-iframe', handler);
+    return () => window.removeEventListener('contextmenu-from-iframe', handler);
+  }, [buildReaderMenuItems]);
+
+  const handleReaderContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      showContextMenu(buildReaderMenuItems(), e.clientX, e.clientY).catch(() => {});
+    },
+    [buildReaderMenuItems]
+  );
+
   return (
     <div className="flex h-screen w-full overflow-hidden transition-colors duration-300" data-testid="reader-layout">
       {!isFullscreen && (
@@ -211,6 +291,7 @@ export const ReaderLayout: React.FC<ReaderLayoutProps> = ({ content, onBack, onB
 
         <div
           className={`flex-1 relative overflow-hidden group ${isFullscreen ? 'bg-black' : 'bg-stone-100 dark:bg-stone-950'}`}
+          onContextMenu={handleReaderContextMenu}
           onTouchStart={(e) => {
             if (status !== 'ready' || settings.viewMode === 'scroll') return;
             (e.currentTarget as HTMLElement).dataset.touchStartX = String(e.touches[0]?.clientX ?? 0);

@@ -23,6 +23,8 @@ export interface ReaderAdapter {
 
   setDirection?(dir: 'ltr' | 'rtl'): void;
 
+  setEpubTheme?(theme: 'light' | 'dark' | 'sepia' | 'system'): void;
+
   setPreRender(enabled: boolean): void;
 
   destroy(): void;
