@@ -24,6 +24,7 @@ export const BookEditView: React.FC<BookEditViewProps> = ({
   const [coverPath, setCoverPath] = useState<string | null>(
     book.coverPath ?? null
   );
+  const [coverError, setCoverError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,6 +41,7 @@ export const BookEditView: React.FC<BookEditViewProps> = ({
       });
       if (result && typeof result === "string") {
         setCoverPath(result);
+        setCoverError(false);
       }
     } catch (e) {
       console.error("[BookEditView] handleChooseCover:", e);
@@ -155,11 +157,12 @@ export const BookEditView: React.FC<BookEditViewProps> = ({
             </label>
             <div className="flex items-center gap-4">
               <div className="w-24 h-32 rounded-xl overflow-hidden bg-stone-200 dark:bg-stone-800 flex items-center justify-center shrink-0">
-                {coverPath ? (
+                {coverPath && !coverError ? (
                   <img
                     src={convertFileSrc(coverPath)}
                     alt=""
                     className="w-full h-full object-cover"
+                    onError={() => setCoverError(true)}
                   />
                 ) : (
                   <Book

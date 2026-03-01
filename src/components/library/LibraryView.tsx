@@ -2,7 +2,8 @@ import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { ArrowDownUp, Bookmark, ChevronDown, Filter, Library as LibraryIcon, Plus, Search, Settings } from "lucide-react";
-import { BookCard } from "./BookCard";
+import { BookCardWithContextMenu } from "./BookCardWithContextMenu";
+import { showContextMenu, type ContextMenuEntry } from "../../utils/contextMenu";
 import { AddBookModal } from "./AddBookModal";
 import { useLibrary } from "../../hooks/useLibrary";
 import { useShelves } from "../../hooks/useShelves";
@@ -16,14 +17,22 @@ type FilterStatus = "all" | "not_started" | "reading" | "completed";
 type FilterShelf = string | null; // shelf id or null for all
 
 interface LibraryViewProps {
-  onSelectBook: (book: LibraryBook) => void;
+  onSelectBook: (book: LibraryBook, options?: { autoSearchMetadata?: boolean }) => void;
+  onEditBook?: (book: LibraryBook) => void;
   onRead?: (paths: string[], title: string, bookId: string, volumeId: string) => void;
+  onRemoveBook?: (bookId: string) => void;
   onOpenSettings?: () => void;
 }
 
-export const LibraryView: React.FC<LibraryViewProps> = ({ onSelectBook, onRead, onOpenSettings }) => {
+export const LibraryView: React.FC<LibraryViewProps> = ({
+  onSelectBook,
+  onEditBook,
+  onRead,
+  onRemoveBook,
+  onOpenSettings,
+}) => {
   const { t } = useTranslation();
-  const { shelves } = useShelves();
+  const { shelves, addToShelf } = useShelves();
   const [shelfFilterBookIds, setShelfFilterBookIds] = useState<string[]>([]);
   const {
     books,
@@ -35,9 +44,11 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onSelectBook, onRead, 
     error,
     clearError,
     isImporting,
+    refresh,
   } = useLibrary();
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [addAndSearchMetadata, setAddAndSearchMetadata] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<SortOrder>("addedAt");
   const [filterFormat, setFilterFormat] = useState<FilterFormat>("all");
@@ -45,6 +56,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onSelectBook, onRead, 
   const [filterShelf, setFilterShelf] = useState<FilterShelf>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [showShelfDropdown, setShowShelfDropdown] = useState(false);
+  const [failedCovers, setFailedCovers] = useState<Set<string>>(new Set());
   const searchInputRef = useRef<HTMLInputElement>(null);
   const shelfDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -81,24 +93,109 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onSelectBook, onRead, 
     const book = await addFromFolder();
     if (book) {
       setModalOpen(false);
+      if (addAndSearchMetadata) {
+        onSelectBook(book, { autoSearchMetadata: true });
+      }
     }
-  }, [addFromFolder]);
+  }, [addFromFolder, addAndSearchMetadata, onSelectBook]);
 
   const handleSelectFile = useCallback(async () => {
     const book = await addFromFile();
     if (book) {
       setModalOpen(false);
+      if (addAndSearchMetadata) {
+        onSelectBook(book, { autoSearchMetadata: true });
+      }
     }
-  }, [addFromFile]);
+  }, [addFromFile, addAndSearchMetadata, onSelectBook]);
 
   const handleCloseModal = useCallback(() => {
     setModalOpen(false);
     clearError();
   }, [clearError]);
 
+  const handleLibraryContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      const items: ContextMenuEntry[] = [
+        { id: "add_book", text: t("context.add_book"), action: () => setModalOpen(true) },
+        { id: "add_folder", text: t("context.add_folder"), action: () => handleSelectFolder() },
+        { id: "add_file", text: t("context.add_file"), action: () => handleSelectFile() },
+      ];
+      if (books.length === 0 && onOpenSettings) {
+        items.push({
+          id: "create_shelf",
+          text: t("library.create_shelf"),
+          action: onOpenSettings,
+        });
+      }
+      if (onOpenSettings) {
+        items.push({ id: "settings", text: t("context.settings"), action: onOpenSettings });
+      }
+      showContextMenu(items, e.clientX, e.clientY).catch(() => {});
+    },
+    [handleSelectFolder, handleSelectFile, onOpenSettings, books.length, t]
+  );
+
+  const handleHeaderContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      const items: ContextMenuEntry[] = [
+        { id: "add_book", text: t("context.add_book"), action: () => setModalOpen(true) },
+      ];
+      if (onOpenSettings) {
+        items.push({ id: "settings", text: t("context.settings"), action: onOpenSettings });
+      }
+      items.push({
+        id: "focus_search",
+        text: t("context.focus_search", "Focar busca"),
+        action: () => searchInputRef.current?.focus(),
+      });
+      showContextMenu(items, e.clientX, e.clientY).catch(() => {});
+    },
+    [onOpenSettings, t]
+  );
+
+  const handleContinueReadingContextMenu = useCallback(
+    (e: React.MouseEvent, item: (typeof recentProgress)[0]) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const items: ContextMenuEntry[] = [
+        {
+          id: "continue",
+          text: t("context.continue_reading"),
+          action: () =>
+            onRead?.(
+              item.volume.chapters.map((c) => c.path),
+              `${item.book.title} — ${item.volume.name}`,
+              item.book.id,
+              item.volume.id
+            ),
+        },
+        {
+          id: "open",
+          text: t("context.open"),
+          action: () => onSelectBook(item.book),
+        },
+      ];
+      if (onRemoveBook) {
+        items.push({
+          id: "remove",
+          text: t("context.remove"),
+          action: () => onRemoveBook(item.book.id),
+        });
+      }
+      showContextMenu(items, e.clientX, e.clientY).catch(() => {});
+    },
+    [onRead, onSelectBook, onRemoveBook, t]
+  );
+
   return (
     <div className="h-screen w-full flex flex-col bg-stone-50 dark:bg-stone-950" data-testid="library-view">
-      <header className="shrink-0 flex items-center justify-between px-8 py-5 border-b border-stone-200/80 dark:border-stone-800 bg-white/95 dark:bg-stone-900/95 backdrop-blur-sm">
+      <header
+        className="shrink-0 flex items-center justify-between px-8 py-5 border-b border-stone-200/80 dark:border-stone-800 bg-white/95 dark:bg-stone-900/95 backdrop-blur-sm"
+        onContextMenu={handleHeaderContextMenu}
+      >
         <div className="flex items-center gap-4 flex-1 min-w-0 max-w-2xl">
           <div className="p-2 rounded-xl bg-brand/10 dark:bg-brand/20 shrink-0">
             <LibraryIcon className="w-7 h-7 text-brand" strokeWidth={1.75} />
@@ -146,7 +243,10 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onSelectBook, onRead, 
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto p-8">
+      <main
+        className="flex-1 overflow-y-auto p-8"
+        onContextMenu={handleLibraryContextMenu}
+      >
         {recentProgress.length > 0 && onRead && (
           <section className="mb-8">
             <h2 className="text-sm font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-4">
@@ -158,21 +258,23 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onSelectBook, onRead, 
                   key={`${item.book.id}-${item.volume.id}`}
                   type="button"
                   onClick={() =>
-                    onRead(
+                    onRead?.(
                       item.volume.chapters.map((c) => c.path),
                       `${item.book.title} — ${item.volume.name}`,
                       item.book.id,
                       item.volume.id
                     )
                   }
+                  onContextMenu={(e) => handleContinueReadingContextMenu(e, item)}
                   className="flex-shrink-0 w-28 text-left rounded-xl overflow-hidden bg-white dark:bg-stone-900/80 border border-stone-200 dark:border-stone-800 hover:border-brand/40 dark:hover:border-brand/40 transition-all"
                 >
                   <div className="aspect-[3/4] bg-stone-200 dark:bg-stone-800 flex items-center justify-center overflow-hidden">
-                    {item.book.coverPath ? (
+                    {item.book.coverPath && !failedCovers.has(item.book.coverPath) ? (
                       <img
                         src={convertFileSrc(item.book.coverPath)}
                         alt=""
                         className="w-full h-full object-cover"
+                        onError={() => setFailedCovers((s) => new Set(s).add(item.book.coverPath!))}
                       />
                     ) : (
                       <span className="text-3xl text-stone-400">📖</span>
@@ -333,10 +435,34 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onSelectBook, onRead, 
                 return b.addedAt - a.addedAt;
               })
               .map((book) => (
-              <BookCard
-                key={book.id}
+              <BookCardWithContextMenu
+                key={`${book.id}-${book.coverPath ?? ""}`}
                 book={book}
-                onClick={() => onSelectBook(book)}
+                shelves={shelves}
+                onOpen={() => onSelectBook(book)}
+                onRead={
+                  onRead
+                    ? () => {
+                        const vol = book.volumes[0];
+                        if (vol) {
+                          onRead(
+                            vol.chapters.map((c) => c.path),
+                            book.title,
+                            book.id,
+                            vol.id
+                          );
+                        }
+                      }
+                    : undefined
+                }
+                onEdit={onEditBook ? () => onEditBook(book) : undefined}
+                onRemove={
+                  onRemoveBook
+                    ? () => onRemoveBook(book.id)
+                    : undefined
+                }
+                onProgressChanged={refresh}
+                addToShelf={addToShelf}
                 progressPercent={progressMap.get(book.id)?.progressPercent}
               />
             ))}
@@ -353,6 +479,8 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ onSelectBook, onRead, 
         error={error}
         onClearError={clearError}
         isImporting={isImporting}
+        addAndSearchMetadata={addAndSearchMetadata}
+        onAddAndSearchMetadataChange={setAddAndSearchMetadata}
       />
     </div>
   );

@@ -10,6 +10,8 @@ interface AddBookModalProps {
   error: string | null;
   onClearError: () => void;
   isImporting: boolean;
+  addAndSearchMetadata: boolean;
+  onAddAndSearchMetadataChange: (value: boolean) => void;
 }
 
 export const AddBookModal: React.FC<AddBookModalProps> = ({
@@ -20,6 +22,8 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({
   error,
   onClearError,
   isImporting,
+  addAndSearchMetadata,
+  onAddAndSearchMetadataChange,
 }) => {
   const { t } = useTranslation();
 
@@ -70,6 +74,28 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({
         </div>
 
         <div className="p-5 space-y-4">
+          <div className="flex items-center justify-between gap-4 p-3 rounded-xl bg-stone-50 dark:bg-stone-800/80 border border-stone-200 dark:border-stone-700">
+            <span className="text-sm font-medium text-stone-700 dark:text-stone-300">
+              {addAndSearchMetadata
+                ? t("library.add_book_mode_add_and_search")
+                : t("library.add_book_mode_add_only")}
+            </span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={addAndSearchMetadata}
+              onClick={() => onAddAndSearchMetadataChange(!addAndSearchMetadata)}
+              className={`relative w-12 h-7 rounded-full transition-colors duration-200 ${
+                addAndSearchMetadata ? "bg-brand" : "bg-stone-300 dark:bg-stone-600"
+              }`}
+            >
+              <span
+                className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow-md transition-all duration-200 ${
+                  addAndSearchMetadata ? "left-6" : "left-1"
+                }`}
+              />
+            </button>
+          </div>
           <button
             type="button"
             onClick={handleSelectFolder}
