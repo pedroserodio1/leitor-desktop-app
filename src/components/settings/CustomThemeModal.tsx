@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { X, Download, Upload } from "lucide-react";
+import { openUrl } from "@tauri-apps/plugin-opener";
+import { X, Download, Upload, ExternalLink } from "lucide-react";
 import {
   createCustomTheme,
   updateCustomTheme,
@@ -143,6 +144,20 @@ export const CustomThemeModal: React.FC<CustomThemeModalProps> = ({
             <p className="text-xs text-stone-500 dark:text-stone-400 mt-2">
               {t("settings.custom_theme_hint")}
             </p>
+            {import.meta.env.VITE_BASE_URL && (
+              <button
+                type="button"
+                onClick={() =>
+                  openUrl(
+                    `${String(import.meta.env.VITE_BASE_URL).replace(/\/$/, "")}/doc/themes`
+                  )
+                }
+                className="inline-flex items-center gap-1.5 text-xs text-brand hover:underline mt-2"
+              >
+                {t("settings.custom_theme_doc_link")}
+                <ExternalLink className="w-3.5 h-3.5" strokeWidth={1.75} />
+              </button>
+            )}
           </div>
 
           {error && (
