@@ -1,0 +1,4 @@
+[[permission]]
+identifier = "allow-splash-commands"
+description = "Close splash screen and show main window"
+commands.allow = ["close_splashscreen"]

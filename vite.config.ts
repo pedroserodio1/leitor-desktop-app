@@ -11,6 +11,10 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
+      input: {
+        main: 'index.html',
+        splashscreen: 'splashscreen.html',
+      },
       output: {
         manualChunks: {
           pdfjs: ['pdfjs-dist'],
