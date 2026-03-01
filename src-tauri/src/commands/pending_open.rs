@@ -4,7 +4,9 @@ use std::path::Path;
 use std::sync::Mutex;
 use tauri::State;
 
-const SUPPORTED_EXT: &[&str] = &["epub", "pdf", "cbz", "cbr", "zip", "rar", "jpg", "jpeg", "png", "webp"];
+const SUPPORTED_EXT: &[&str] = &[
+    "epub", "pdf", "cbz", "cbr", "zip", "rar", "jpg", "jpeg", "png", "webp",
+];
 
 fn is_supported_path(path: &str) -> bool {
     let p = Path::new(path);

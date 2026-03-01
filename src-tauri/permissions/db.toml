@@ -21,5 +21,12 @@ commands.allow = [
   "add_book_to_shelf",
   "remove_book_from_shelf",
   "get_book_shelf_ids",
-  "get_books_in_shelf"
+  "get_books_in_shelf",
+  "search_metadata",
+  "apply_metadata_candidate",
+  "list_custom_themes",
+  "get_custom_theme",
+  "create_custom_theme",
+  "update_custom_theme",
+  "delete_custom_theme"
 ]

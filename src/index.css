@@ -3,13 +3,19 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  /* Identidade: verde-teal profundo, ambiente de leitura calmo */
-  --color-brand: #0d9488;
-  --color-brand-hover: #0f766e;
-  --color-surface: #f8faf8;
-  --color-surface-elevated: #ffffff;
-  --color-surface-dark: #0f1419;
-  --color-surface-elevated-dark: #1a2228;
+  /* Cores de destaque (accent) - brand é alias para compatibilidade */
+  --color-accent: #e69aa8;
+  --color-accent-light: #ebb4bd;
+  --color-accent-glow-light: rgba(230, 154, 168, 0.15);
+  --color-accent-glow-dark: rgba(230, 154, 168, 0.25);
+  --color-brand: var(--color-accent);
+  --color-brand-hover: var(--color-accent-light);
+  /* Outras cores de uso */
+  --color-overlay-dark: rgba(9, 9, 11, 0.8);
+  --color-overlay-light: rgba(250, 250, 250, 0.85);
+  --color-shadow-dark: rgba(0, 0, 0, 0.3);
+  --color-shadow-light: rgba(0, 0, 0, 0.12);
+  --color-shadow-modal: rgba(0, 0, 0, 0.15);
   /* Tipografia */
   --font-sans: "DM Sans", system-ui, sans-serif;
   --font-heading: "Literata", Georgia, serif;
@@ -24,6 +30,28 @@
 @layer base {
   :root {
     color-scheme: light dark;
+    /* Light mode */
+    --color-bg: #fafafa;
+    --color-bg-elevated: #ffffff;
+    --color-surface: #f4f4f5;
+    --color-surface-hover: #e4e4e7;
+    --color-text: #18181b;
+    --color-text-muted: #71717a;
+    --color-border: rgba(0, 0, 0, 0.08);
+    --color-border-strong: rgba(0, 0, 0, 0.12);
+    --color-accent-glow: var(--color-accent-glow-light);
+  }
+
+  .dark {
+    --color-bg: #09090b;
+    --color-bg-elevated: #18181b;
+    --color-surface: #27272a;
+    --color-surface-hover: #3f3f46;
+    --color-text: #fafafa;
+    --color-text-muted: #a1a1aa;
+    --color-border: rgba(255, 255, 255, 0.08);
+    --color-border-strong: rgba(255, 255, 255, 0.12);
+    --color-accent-glow: var(--color-accent-glow-dark);
   }
 
   html,
@@ -33,12 +61,8 @@
   }
 
   body {
-    @apply text-stone-800 dark:text-stone-200;
-    background-color: var(--color-surface);
-  }
-
-  .dark body {
-    background-color: var(--color-surface-dark);
+    color: var(--color-text);
+    background-color: var(--color-bg);
   }
 
   #root {
@@ -115,4 +139,21 @@
 
 .page-transition-prev {
   animation: page-in-prev 0.25s ease-out forwards;
+}
+
+/* Metadata search loading shimmer */
+@keyframes metadata-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-metadata-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgb(203 213 225 / 0.15) 25%,
+    rgb(203 213 225 / 0.4) 50%,
+    rgb(203 213 225 / 0.15) 75%
+  );
+  background-size: 200% 100%;
+  animation: metadata-shimmer 1.5s ease-in-out infinite;
 }

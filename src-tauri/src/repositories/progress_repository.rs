@@ -1,8 +1,8 @@
 //! Repositório de progresso de leitura (um por volume).
 //! Frontend faz debounce para evitar writes excessivos.
 
-use rusqlite::params;
 use crate::models::ReadingProgress;
+use rusqlite::params;
 
 pub fn upsert_progress(conn: &rusqlite::Connection, p: &ReadingProgress) -> crate::Result<()> {
     conn.execute(

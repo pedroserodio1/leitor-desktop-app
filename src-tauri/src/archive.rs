@@ -7,8 +7,8 @@ use std::fs::{self, File};
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use tauri::Manager;
 use tauri::path::BaseDirectory;
+use tauri::Manager;
 use zip::ZipArchive;
 
 const IMAGE_EXT: [&str; 7] = ["jpg", "jpeg", "png", "webp", "gif", "bmp", "avif"];
@@ -38,9 +38,13 @@ fn extract_zip(archive_path: &str) -> Result<ArchiveExtracted, String> {
     let file = File::open(path).map_err(|e| e.to_string())?;
     let mut archive = ZipArchive::new(BufReader::new(file)).map_err(|e| e.to_string())?;
 
-    let temp_dir = std::env::temp_dir()
-        .join("leitor")
-        .join(format!("{:x}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_nanos()));
+    let temp_dir = std::env::temp_dir().join("leitor").join(format!(
+        "{:x}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_nanos()
+    ));
     fs::create_dir_all(&temp_dir).map_err(|e| e.to_string())?;
 
     let mut image_paths: Vec<PathBuf> = Vec::new();
@@ -95,7 +99,10 @@ fn find_7z(app: &tauri::AppHandle) -> Option<(PathBuf, Option<PathBuf>)> {
     };
     // 1) Bundled with the app (no user installation)
     for exe_name in &exe_names {
-        if let Ok(bundled) = app.path().resolve(format!("7z/{}", exe_name), BaseDirectory::Resource) {
+        if let Ok(bundled) = app
+            .path()
+            .resolve(format!("7z/{}", exe_name), BaseDirectory::Resource)
+        {
             if bundled.exists() {
                 let work_dir = bundled.parent().map(PathBuf::from);
                 return Some((bundled, work_dir));
@@ -108,7 +115,10 @@ fn find_7z(app: &tauri::AppHandle) -> Option<(PathBuf, Option<PathBuf>)> {
     }
     // 3) Windows: common install paths
     if cfg!(target_os = "windows") {
-        for base in ["C:\\Program Files\\7-Zip\\7z.exe", "C:\\Program Files (x86)\\7-Zip\\7z.exe"] {
+        for base in [
+            "C:\\Program Files\\7-Zip\\7z.exe",
+            "C:\\Program Files (x86)\\7-Zip\\7z.exe",
+        ] {
             let p = PathBuf::from(base);
             if p.exists() {
                 return Some((p, None));
@@ -119,8 +129,16 @@ fn find_7z(app: &tauri::AppHandle) -> Option<(PathBuf, Option<PathBuf>)> {
 }
 
 fn which_7z() -> Option<PathBuf> {
-    let name = if cfg!(target_os = "windows") { "7z.exe" } else { "7z" };
-    Command::new(name).arg("--help").output().ok().filter(|o| o.status.success())?;
+    let name = if cfg!(target_os = "windows") {
+        "7z.exe"
+    } else {
+        "7z"
+    };
+    Command::new(name)
+        .arg("--help")
+        .output()
+        .ok()
+        .filter(|o| o.status.success())?;
     Some(PathBuf::from(name))
 }
 
@@ -131,23 +149,31 @@ fn extract_rar(app: &tauri::AppHandle, archive_path: &str) -> Result<ArchiveExtr
         return Err("Archive file not found".to_string());
     }
 
-    let temp_dir = std::env::temp_dir()
-        .join("leitor")
-        .join(format!("rar_{:x}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_nanos()));
+    let temp_dir = std::env::temp_dir().join("leitor").join(format!(
+        "rar_{:x}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_nanos()
+    ));
     fs::create_dir_all(&temp_dir).map_err(|e| e.to_string())?;
 
     let out_dir = format!("-o{}", temp_dir.to_str().unwrap());
 
     let (exe, work_dir) = find_7z(app).ok_or_else(|| {
         let _ = fs::remove_dir_all(&temp_dir);
-        "RAR: coloque 7z.exe e 7z.dll em resources/7z/ (7za não abre RAR). Veja README na pasta.".to_string()
+        "RAR: coloque 7z.exe e 7z.dll em resources/7z/ (7za não abre RAR). Veja README na pasta."
+            .to_string()
     })?;
 
     // 7za não suporta RAR; só 7z.exe + 7z.dll suportam
     let exe_str = exe.to_string_lossy();
     if exe_str.contains("7za") && archive_path.to_lowercase().ends_with(".rar") {
         let _ = fs::remove_dir_all(&temp_dir);
-        return Err("Para abrir RAR, use 7z.exe e 7z.dll (não 7za). Coloque em resources/7z/. Veja README.".to_string());
+        return Err(
+            "Para abrir RAR, use 7z.exe e 7z.dll (não 7za). Coloque em resources/7z/. Veja README."
+                .to_string(),
+        );
     }
 
     let mut cmd = Command::new(&exe);
@@ -207,7 +233,10 @@ fn walk_dir(dir: &Path, out: &mut Vec<PathBuf>) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn extract_archive(app: tauri::AppHandle, archive_path: String) -> Result<ArchiveExtracted, String> {
+pub fn extract_archive(
+    app: tauri::AppHandle,
+    archive_path: String,
+) -> Result<ArchiveExtracted, String> {
     let path = archive_path.to_lowercase();
     if path.ends_with(".cbz") || path.ends_with(".zip") {
         extract_zip(&archive_path)

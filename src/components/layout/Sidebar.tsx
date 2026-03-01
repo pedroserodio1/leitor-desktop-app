@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useReaderStore } from '../../store/readerStore';
 import { useReaderAdapterContext } from '../../reader/ReaderAdapterContext';
+import { showContextMenu, type ContextMenuEntry } from '../../utils/contextMenu';
 import { Library, Settings as SettingsIcon, FolderOpen, ImageIcon } from 'lucide-react';
 
 interface SidebarProps {
@@ -25,8 +26,35 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
+  const handleSidebarContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      const items: ContextMenuEntry[] = [
+        { id: 'open_file', text: t('library.open_file'), action: openFile },
+        { id: 'open_images', text: t('library.open_images'), action: openImages },
+      ];
+      if (onBackToLibrary) {
+        items.push({
+          id: 'open_library',
+          text: t('library.open_library'),
+          action: onBackToLibrary,
+        });
+      }
+      items.push({
+        id: 'settings',
+        text: t('context.settings'),
+        action: handleOpenSettings,
+      });
+      showContextMenu(items, e.clientX, e.clientY).catch(() => {});
+    },
+    [openFile, openImages, onBackToLibrary, t]
+  );
+
   return (
-    <div className="h-full flex flex-col bg-stone-50 dark:bg-stone-900/95 border-r border-stone-200 dark:border-stone-800 w-72 shrink-0">
+    <div
+      className="h-full flex flex-col bg-stone-50 dark:bg-stone-900/95 border-r border-stone-200 dark:border-stone-800 w-72 shrink-0"
+      onContextMenu={handleSidebarContextMenu}
+    >
       <div className="p-5 border-b border-stone-200 dark:border-stone-800 flex items-center gap-3">
         <div className="p-2 rounded-xl bg-brand/10 dark:bg-brand/20">
           <Library className="w-5 h-5 text-brand" strokeWidth={1.75} />

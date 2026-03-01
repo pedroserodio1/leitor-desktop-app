@@ -146,8 +146,8 @@ export function scanFile(filePath: string): LibraryBook {
   };
 }
 
-/** Converte resposta do backend (BookWithVolumes[]) para LibraryBook[]. */
-function mapBookWithVolumesToLibraryBook(b: BookWithVolumes): LibraryBook {
+/** Converte resposta do backend (BookWithVolumes) para LibraryBook. */
+export function mapBookWithVolumesToLibraryBook(b: BookWithVolumes): LibraryBook {
   const volumes = b.volumes.map((v) => ({
     id: v.volume.id,
     name: v.volume.name,

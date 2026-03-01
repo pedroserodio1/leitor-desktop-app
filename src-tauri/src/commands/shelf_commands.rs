@@ -18,11 +18,7 @@ pub fn create_shelf(app: AppHandle, id: String, name: String) -> crate::Result<(
 }
 
 #[tauri::command]
-pub fn add_book_to_shelf(
-    app: AppHandle,
-    book_id: String,
-    shelf_id: String,
-) -> crate::Result<()> {
+pub fn add_book_to_shelf(app: AppHandle, book_id: String, shelf_id: String) -> crate::Result<()> {
     let conn = db::open(&app)?;
     repositories::add_book_to_shelf(&conn, &book_id, &shelf_id)
 }
